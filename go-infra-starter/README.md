@@ -43,6 +43,43 @@ go-infra-starter/
 - `dao`: 数据访问与查询封装，不承载业务决策
 - `infra`: 技术细节适配（配置、日志、追踪、存储、运行时）
 
+## 配置约定说明
+
+`internal/infra/config/App` 遵循“优先复用 SDK 配置结构”的原则：
+
+- **来自 go-infra SDK 的字段（直接复用）**
+  - `log`: `pkg/base/log.Config`
+  - `trace`: `pkg/base/trace.Config`
+  - `mysql`: `pkg/infra/mysql.Config`
+  - `redis`: `pkg/infra/redis/v8.Config`
+- **项目自定义字段（编排层）**
+  - `app_name`: 服务名（用于 trace/metrics 默认命名）
+  - `server.address`: HTTP 监听地址
+  - `features`: 运行期开关（`redis` / `metrics` / `pprof`）
+
+示例：
+
+```yaml
+app_name: myapp
+server:
+  address: ":8080"
+
+log:
+  level: 1
+trace:
+  service_name: myapp
+mysql:
+  dsn: ""
+redis:
+  mode: single
+  addresses: ["127.0.0.1:6379"]
+
+features:
+  redis: false
+  metrics: true
+  pprof: false
+```
+
 ## 快速运行
 
 1. 复制该目录到你的新仓库根目录

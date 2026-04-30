@@ -6,7 +6,7 @@ import (
 )
 
 func InitPprof(cfg *config.App) {
-	if cfg.Pprof.Enabled {
+	if cfg.Features.Pprof {
 		pprof.Start()
 	}
 }

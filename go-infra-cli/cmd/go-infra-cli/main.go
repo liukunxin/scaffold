@@ -45,9 +45,8 @@ func printUsage() {
 	fmt.Println("  --output        output directory (default: current directory)")
 	fmt.Println("  --template      starter template directory (default: auto-detect go-infra-starter)")
 	fmt.Println("  --force         overwrite existing target directory")
+	fmt.Println("  --features      comma-separated features, e.g. redis,metrics,pprof")
 	fmt.Println("  --with-mysql    keep mysql integration scaffold (default: true)")
-	fmt.Println("  --with-redis    enable redis in generated config (default: false)")
-	fmt.Println("  --with-metrics  enable metrics in generated config (default: true)")
 	fmt.Println("  --skip-tidy     skip running go mod tidy")
 }
 
@@ -58,9 +57,8 @@ func runInit(args []string) error {
 	output := fs.String("output", ".", "output directory")
 	template := fs.String("template", "", "template directory path")
 	force := fs.Bool("force", false, "overwrite existing directory")
+	features := fs.String("features", "", "comma-separated feature flags: redis,metrics,pprof")
 	withMySQL := fs.Bool("with-mysql", true, "keep mysql integration scaffold")
-	withRedis := fs.Bool("with-redis", false, "enable redis in config")
-	withMetrics := fs.Bool("with-metrics", true, "enable metrics in config")
 	skipTidy := fs.Bool("skip-tidy", false, "skip go mod tidy")
 
 	var projectName string
@@ -92,6 +90,11 @@ func runInit(args []string) error {
 		*appName = projectName
 	}
 
+	resolvedRedis, resolvedMetrics, resolvedPprof, err := parseFeaturesArg(*features)
+	if err != nil {
+		return err
+	}
+
 	templateDir, err := resolveTemplateDir(*template)
 	if err != nil {
 		return err
@@ -114,7 +117,7 @@ func runInit(args []string) error {
 	if err = replaceStarterStrings(targetDir, *moduleName); err != nil {
 		return err
 	}
-	if err = updateConfigYAML(filepath.Join(targetDir, "configs", "config.yml"), *appName, *withRedis, *withMetrics); err != nil {
+	if err = updateConfigYAML(filepath.Join(targetDir, "configs", "config.yml"), *appName, resolvedRedis, resolvedMetrics, resolvedPprof); err != nil {
 		return err
 	}
 	if err = applyFeatureFlags(targetDir, *withMySQL); err != nil {
@@ -236,13 +239,14 @@ func replaceStarterStrings(targetDir, moduleName string) error {
 	})
 }
 
-func updateConfigYAML(path, appName string, withRedis, withMetrics bool) error {
+func updateConfigYAML(path, appName string, withRedis, withMetrics, withPprof bool) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 	content := string(data)
 	content = replaceLineByPrefix(content, "app_name:", fmt.Sprintf("app_name: %s", appName))
+	content = replaceLineByPrefix(content, "service_name:", fmt.Sprintf("service_name: %s", appName))
 	metricsValue := "false"
 	if withMetrics {
 		metricsValue = "true"
@@ -251,9 +255,40 @@ func updateConfigYAML(path, appName string, withRedis, withMetrics bool) error {
 	if withRedis {
 		redisValue = "true"
 	}
-	content = regexp.MustCompile(`(?ms)^metrics:\n\s+enabled:\s*(true|false)\s*$`).ReplaceAllString(content, "metrics:\n  enabled: "+metricsValue)
-	content = regexp.MustCompile(`(?ms)^redis:\n\s+enabled:\s*(true|false)\s*\n`).ReplaceAllString(content, "redis:\n  enabled: "+redisValue+"\n")
+	pprofValue := "false"
+	if withPprof {
+		pprofValue = "true"
+	}
+	content = replaceLineByPrefix(content, "metrics:", "metrics: "+metricsValue)
+	content = replaceLineByPrefix(content, "redis:", "redis: "+redisValue)
+	content = replaceLineByPrefix(content, "pprof:", "pprof: "+pprofValue)
 	return os.WriteFile(path, []byte(content), 0o644)
+}
+
+func parseFeaturesArg(features string) (bool, bool, bool, error) {
+	// 默认值与模板保持一致。
+	enabled := map[string]bool{
+		"redis":   false,
+		"metrics": true,
+		"pprof":   false,
+	}
+	if strings.TrimSpace(features) == "" {
+		return enabled["redis"], enabled["metrics"], enabled["pprof"], nil
+	}
+
+	// 一旦显式指定 --features，则以显式列表为准。
+	enabled["redis"], enabled["metrics"], enabled["pprof"] = false, false, false
+	for _, item := range strings.Split(features, ",") {
+		key := strings.ToLower(strings.TrimSpace(item))
+		if key == "" {
+			continue
+		}
+		if _, ok := enabled[key]; !ok {
+			return false, false, false, fmt.Errorf("unsupported feature %q, allowed: redis,metrics,pprof", key)
+		}
+		enabled[key] = true
+	}
+	return enabled["redis"], enabled["metrics"], enabled["pprof"], nil
 }
 
 func applyFeatureFlags(targetDir string, withMySQL bool) error {

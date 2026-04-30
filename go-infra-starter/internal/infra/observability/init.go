@@ -13,19 +13,17 @@ func InitLog(cfg *config.App) error {
 }
 
 func InitTrace(cfg *config.App) error {
-	serviceName := cfg.Trace.ServiceName
-	if serviceName == "" {
-		serviceName = cfg.AppName
+	traceCfg := cfg.Trace
+	serviceName := cfg.AppName
+	if traceCfg.ServiceName != nil && *traceCfg.ServiceName != "" {
+		serviceName = *traceCfg.ServiceName
 	}
-	traceCfg := &trace.Config{
-		ServiceName: &serviceName,
-		SampleRatio: cfg.Trace.SampleRatio,
-	}
-	return trace.Init(trace.WithConfig(traceCfg))
+	traceCfg.ServiceName = &serviceName
+	return trace.Init(trace.WithConfig(&traceCfg))
 }
 
 func InitMetrics(cfg *config.App, router *gin.Engine) {
-	if cfg.Metrics.Enabled {
+	if cfg.Features.Metrics {
 		metrics.InitMetrics(cfg.AppName, router)
 	}
 }

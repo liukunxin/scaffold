@@ -4,6 +4,6 @@ server:
 trace:
   sample_ratio: 1
 
-metrics:
-  enabled: false
+features:
+  metrics: false
 

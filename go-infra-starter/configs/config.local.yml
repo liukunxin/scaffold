@@ -4,6 +4,6 @@ log:
 trace:
   sample_ratio: 1
 
-metrics:
-  enabled: true
+features:
+  metrics: true
 

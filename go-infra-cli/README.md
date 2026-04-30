@@ -16,8 +16,7 @@ go-infra-cli version
 go-infra-cli init myapp \
   --module github.com/acme/myapp \
   --output . \
-  --with-redis \
-  --with-metrics=false
+  --features redis,pprof
 ```
 
 ## init 参数
@@ -27,10 +26,11 @@ go-infra-cli init myapp \
 - `--output`: 输出目录，默认当前目录
 - `--template`: 模板目录；不传时自动查找 `go-infra-starter`（也兼容 `scaffold/go-infra-starter`）
 - `--force`: 目标目录存在时覆盖
+- `--features`: 功能开关集合（逗号分隔），如 `redis,metrics,pprof`
 - `--with-mysql`: 保留 mysql 集成骨架（默认 `true`）
-- `--with-redis`: 生成项目里默认启用 redis（默认 `false`）
-- `--with-metrics`: 生成项目里默认启用 metrics（默认 `true`）
 - `--skip-tidy`: 跳过 `go mod tidy`
+
+> 不传 `--features` 时默认值：`metrics=true`，`redis=false`，`pprof=false`。
 
 ## 版本注入
 

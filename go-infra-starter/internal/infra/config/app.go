@@ -4,41 +4,33 @@ import (
 	"fmt"
 
 	klog "github.com/liukunxin/go-infra/pkg/base/log"
+	"github.com/liukunxin/go-infra/pkg/base/trace"
 	"github.com/liukunxin/go-infra/pkg/infra/mysql"
-	redisv8 "github.com/liukunxin/go-infra/pkg/infra/redis/v8"
+	redis "github.com/liukunxin/go-infra/pkg/infra/redis/v8"
 )
 
 type App struct {
-	AppName string        `yaml:"app_name" validate:"required"`
-	Server  ServerConfig  `yaml:"server" validate:"required"`
-	Log     klog.Config   `yaml:"log"`
-	Trace   TraceConfig   `yaml:"trace"`
-	Metrics MetricsConfig `yaml:"metrics"`
-	Pprof   PprofConfig   `yaml:"pprof"`
-	Mysql   mysql.Config  `yaml:"mysql"`
-	Redis   RedisConfig   `yaml:"redis"`
+	AppName string       `yaml:"app_name" validate:"required"`
+	Server  ServerConfig `yaml:"server" validate:"required"`
+
+	// 直接复用 go-infra 内置配置结构，避免脚手架重复定义。
+	Log   klog.Config   `yaml:"log"`
+	Trace trace.Config  `yaml:"trace"`
+	Mysql mysql.Config  `yaml:"mysql"`
+	Redis redis.Config  `yaml:"redis"`
+
+	// 以下为项目级能力开关（编排层），不是 go-infra SDK 内置 Config。
+	Features FeaturesConfig `yaml:"features"`
 }
 
 type ServerConfig struct {
 	Address string `yaml:"address" validate:"required"`
 }
 
-type TraceConfig struct {
-	ServiceName string   `yaml:"service_name"`
-	SampleRatio *float64 `yaml:"sample_ratio"`
-}
-
-type MetricsConfig struct {
-	Enabled bool `yaml:"enabled"`
-}
-
-type PprofConfig struct {
-	Enabled bool `yaml:"enabled"`
-}
-
-type RedisConfig struct {
-	Enabled bool           `yaml:"enabled"`
-	Config  redisv8.Config `yaml:"config"`
+type FeaturesConfig struct {
+	Redis   bool `yaml:"redis"`
+	Metrics bool `yaml:"metrics"`
+	Pprof   bool `yaml:"pprof"`
 }
 
 func (a *App) Validate() error {

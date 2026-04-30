@@ -13,11 +13,10 @@ trace:
   service_name: go-infra-starter
   sample_ratio: 1
 
-metrics:
-  enabled: true
-
-pprof:
-  enabled: false
+features:
+  redis: false
+  metrics: true
+  pprof: false
 
 mysql:
   dsn: ""
@@ -30,13 +29,11 @@ mysql:
   gorm_log_level: 2
 
 redis:
-  enabled: false
-  config:
-    mode: single
-    addresses:
-      - "127.0.0.1:6379"
-    password: ""
-    pool_size: 10
-    min_idle_conns: 0
-    idle_timeout: 5m
+  mode: single
+  addresses:
+    - "127.0.0.1:6379"
+  password: ""
+  pool_size: 10
+  min_idle_conns: 0
+  idle_timeout: 5m
 

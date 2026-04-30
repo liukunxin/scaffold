@@ -5,9 +5,7 @@ log:
 trace:
   sample_ratio: 0.1
 
-metrics:
-  enabled: true
-
-pprof:
-  enabled: false
+features:
+  metrics: true
+  pprof: false
 

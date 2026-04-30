@@ -10,10 +10,10 @@ type RedisState struct {
 }
 
 func InitRedis(cfg *config.App) (*RedisState, error) {
-	if !cfg.Redis.Enabled {
+	if !cfg.Features.Redis {
 		return &RedisState{Enabled: false}, nil
 	}
-	if err := redisv8.Init(&cfg.Redis.Config); err != nil {
+	if err := redisv8.Init(&cfg.Redis); err != nil {
 		return nil, err
 	}
 	return &RedisState{Enabled: true}, nil
