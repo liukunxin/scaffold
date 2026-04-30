@@ -1,0 +1,10 @@
+log:
+  level: 1
+  formatter: json
+
+trace:
+  sample_ratio: 0.3
+
+metrics:
+  enabled: true
+

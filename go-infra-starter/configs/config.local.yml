@@ -1,0 +1,9 @@
+log:
+  formatter: text
+
+trace:
+  sample_ratio: 1
+
+metrics:
+  enabled: true
+

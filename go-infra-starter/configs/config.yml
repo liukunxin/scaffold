@@ -1,0 +1,42 @@
+app_name: go-infra-starter
+
+server:
+  address: ":8080"
+
+log:
+  level: 1
+  formatter: json
+  output: stdout
+  buffer_size: 1024
+
+trace:
+  service_name: go-infra-starter
+  sample_ratio: 1
+
+metrics:
+  enabled: true
+
+pprof:
+  enabled: false
+
+mysql:
+  dsn: ""
+  max_open_conns: 100
+  max_idle_conns: 10
+  conn_max_lifetime: 1h
+  conn_max_idle_time: 10m
+  conn_retry_times: 3
+  conn_retry_interval: 2s
+  gorm_log_level: 2
+
+redis:
+  enabled: false
+  config:
+    mode: single
+    addresses:
+      - "127.0.0.1:6379"
+    password: ""
+    pool_size: 10
+    min_idle_conns: 0
+    idle_timeout: 5m
+
