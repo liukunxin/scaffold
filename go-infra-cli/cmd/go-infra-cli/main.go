@@ -45,7 +45,7 @@ func printUsage() {
 	fmt.Println("  --output        output directory (default: current directory)")
 	fmt.Println("  --template      starter template directory (default: auto-detect go-infra-starter)")
 	fmt.Println("  --force         overwrite existing target directory")
-	fmt.Println("  --features      comma-separated features, e.g. redis,metrics,pprof")
+	fmt.Println("  --features      comma-separated features, e.g. redis,metrics,pprof,cursor-rules")
 	fmt.Println("  --with-mysql    keep mysql integration scaffold (default: true)")
 	fmt.Println("  --skip-tidy     skip running go mod tidy")
 }
@@ -57,7 +57,7 @@ func runInit(args []string) error {
 	output := fs.String("output", ".", "output directory")
 	template := fs.String("template", "", "template directory path")
 	force := fs.Bool("force", false, "overwrite existing directory")
-	features := fs.String("features", "", "comma-separated feature flags: redis,metrics,pprof")
+	features := fs.String("features", "", "comma-separated feature flags: redis,metrics,pprof,cursor-rules")
 	withMySQL := fs.Bool("with-mysql", true, "keep mysql integration scaffold")
 	skipTidy := fs.Bool("skip-tidy", false, "skip go mod tidy")
 
@@ -90,7 +90,7 @@ func runInit(args []string) error {
 		*appName = projectName
 	}
 
-	resolvedRedis, resolvedMetrics, resolvedPprof, err := parseFeaturesArg(*features)
+	resolvedRedis, resolvedMetrics, resolvedPprof, resolvedCursorRules, err := parseFeaturesArg(*features)
 	if err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func runInit(args []string) error {
 	if err = updateConfigYAML(filepath.Join(targetDir, "configs", "config.yml"), *appName, resolvedRedis, resolvedMetrics, resolvedPprof); err != nil {
 		return err
 	}
-	if err = applyFeatureFlags(targetDir, *withMySQL); err != nil {
+	if err = applyFeatureFlags(targetDir, *withMySQL, resolvedCursorRules); err != nil {
 		return err
 	}
 
@@ -265,43 +265,55 @@ func updateConfigYAML(path, appName string, withRedis, withMetrics, withPprof bo
 	return os.WriteFile(path, []byte(content), 0o644)
 }
 
-func parseFeaturesArg(features string) (bool, bool, bool, error) {
+func parseFeaturesArg(features string) (bool, bool, bool, bool, error) {
 	// 默认值与模板保持一致。
 	enabled := map[string]bool{
-		"redis":   false,
-		"metrics": true,
-		"pprof":   false,
+		"redis":        false,
+		"metrics":      true,
+		"pprof":        false,
+		"cursor-rules": false,
 	}
 	if strings.TrimSpace(features) == "" {
-		return enabled["redis"], enabled["metrics"], enabled["pprof"], nil
+		return enabled["redis"], enabled["metrics"], enabled["pprof"], enabled["cursor-rules"], nil
 	}
 
 	// 一旦显式指定 --features，则以显式列表为准。
-	enabled["redis"], enabled["metrics"], enabled["pprof"] = false, false, false
+	enabled["redis"], enabled["metrics"], enabled["pprof"], enabled["cursor-rules"] = false, false, false, false
 	for _, item := range strings.Split(features, ",") {
 		key := strings.ToLower(strings.TrimSpace(item))
 		if key == "" {
 			continue
 		}
 		if _, ok := enabled[key]; !ok {
-			return false, false, false, fmt.Errorf("unsupported feature %q, allowed: redis,metrics,pprof", key)
+			return false, false, false, false, fmt.Errorf("unsupported feature %q, allowed: redis,metrics,pprof,cursor-rules", key)
 		}
 		enabled[key] = true
 	}
-	return enabled["redis"], enabled["metrics"], enabled["pprof"], nil
+	return enabled["redis"], enabled["metrics"], enabled["pprof"], enabled["cursor-rules"], nil
 }
 
-func applyFeatureFlags(targetDir string, withMySQL bool) error {
-	if withMySQL {
+func applyFeatureFlags(targetDir string, withMySQL, withCursorRules bool) error {
+	if !withMySQL {
+		configPath := filepath.Join(targetDir, "configs", "config.yml")
+		data, err := os.ReadFile(configPath)
+		if err != nil {
+			return err
+		}
+		content := replaceLineByPrefix(string(data), "  dsn:", `  dsn: ""`)
+		if err = os.WriteFile(configPath, []byte(content), 0o644); err != nil {
+			return err
+		}
+	}
+	if withCursorRules {
 		return nil
 	}
-	configPath := filepath.Join(targetDir, "configs", "config.yml")
-	data, err := os.ReadFile(configPath)
-	if err != nil {
+	if err := os.RemoveAll(filepath.Join(targetDir, ".cursor")); err != nil {
 		return err
 	}
-	content := replaceLineByPrefix(string(data), "  dsn:", `  dsn: ""`)
-	return os.WriteFile(configPath, []byte(content), 0o644)
+	if err := os.Remove(filepath.Join(targetDir, "AGENTS.md")); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
 }
 
 func runGoModTidy(targetDir string) error {

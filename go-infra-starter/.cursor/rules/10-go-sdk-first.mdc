@@ -1,0 +1,31 @@
+---
+description: Reuse SDK and keep Go implementation/style consistent
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# Go Implementation Rule
+
+- Always check whether existing SDK/base packages already solve the requirement.
+- Prefer SDK abstractions for config, logging, metrics, tracing, DB, cache, and middleware.
+- Keep custom wrappers thin and focused when SDK extension is required.
+- Keep SDK integration points inside `internal/infra` and expose business-facing interfaces upward.
+- Follow existing package layout and file naming in this starter.
+- Return wrapped errors with context (`fmt.Errorf("...: %w", err)`).
+- Keep logs structured and include stable keys.
+- Prefer table-driven tests for core business branches.
+
+## Required behavior for code generation
+
+1. Search current codebase for an existing SDK usage pattern first.
+2. If a pattern exists, follow that pattern instead of inventing a new stack.
+3. If no pattern exists, add a short rationale comment near the new adapter.
+4. If a new third-party dependency is introduced, explain why SDK/base packages are insufficient.
+
+## Consistency checks
+
+- Duplicate utilities that overlap with SDK responsibilities.
+- Direct dependency on low-level client initialization in business layer.
+- Mixing multiple logging/metrics styles in one service.
+- Imports are grouped and formatted by `gofmt`.
+- No dead code, commented-out blocks, or placeholder TODOs.

@@ -90,6 +90,8 @@ go mod tidy
 go run ./cmd/http
 ```
 
+模板默认包含基础 `.gitignore`（构建产物、日志、环境文件、常见 IDE/OS 噪音文件）。
+
 默认监听 `:8080`，示例接口：
 
 - `GET /health`
@@ -97,4 +99,14 @@ go run ./cmd/http
 - `GET /api/v1/users/:id`
 
 > 说明：示例 `user dao` 采用内存实现，便于开箱即跑。真实项目中将 `dao` 替换为 MySQL/GORM 实现即可。
+
+## Cursor 协作规范（可选）
+
+当通过 `go-infra-cli` 初始化并启用 `cursor-rules` 特性时，项目会包含：
+
+- `AGENTS.md`: Agent 协作约定与分层边界说明
+- `.cursor/rules/00-architecture.mdc`: 分层架构、依赖方向与基础变更安全约束
+- `.cursor/rules/10-go-sdk-first.mdc`: SDK 优先复用与 Go 实现一致性约束
+
+如果初始化时未启用 `cursor-rules`，这些文件不会被保留。
 

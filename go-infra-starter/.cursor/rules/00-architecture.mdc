@@ -1,0 +1,29 @@
+---
+description: Enforce architecture boundaries and change safety baseline
+alwaysApply: true
+---
+
+# Core Architecture and Safety Rule
+
+- Keep dependency direction stable: `cmd -> bootstrap -> app -> infra/sdk`.
+- `internal/app` owns business decisions; avoid transport or storage details in app logic.
+- `internal/infra` implements adapters and external integrations only.
+- `internal/route` handles transport wiring, not business orchestration.
+- Prefer constructor injection over global state.
+- Keep package responsibilities aligned with starter layout (`internal/app`, `internal/infra`, `internal/bootstrap`, `internal/route`).
+- Keep backward compatibility unless a breaking change is explicitly requested.
+
+## Must Not
+
+- Import concrete infra clients inside business services when an adapter exists.
+- Put business branching logic into `cmd` or `route`.
+- Create cyclic dependencies across `internal/*` packages.
+- Add cross-layer "shortcut" imports that bypass intended orchestration flow.
+
+## When introducing or changing code
+
+1. Place file in the closest existing layer/package.
+2. Match existing package naming and layout.
+3. Keep interfaces near business callers; keep implementations in infra.
+4. If behavior/config/API changes, update affected docs in the same change.
+5. Re-check that routes/config keys/error formats were not changed unintentionally.

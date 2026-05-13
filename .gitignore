@@ -1,0 +1,35 @@
+# Workspace temp/output
+.tmp-gen/
+tmp/
+temp/
+
+# Build artifacts
+bin/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Go outputs
+*.test
+*.out
+coverage.out
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
