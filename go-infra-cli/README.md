@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-go install github.com/liukunxin/go-infra-scaffold/go-infra-cli/cmd/go-infra-cli@latest
+go install github.com/liukunxin/scaffold/go-infra-cli/cmd/go-infra-cli@latest
 ```
 
 ## 使用
