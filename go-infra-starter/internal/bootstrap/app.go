@@ -5,7 +5,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/liukunxin/go-infra/pkg/base/env"
+	"go-infra-starter/internal/infra/ai"
 	"go-infra-starter/internal/infra/config"
+	"go-infra-starter/internal/infra/network"
 	"go-infra-starter/internal/infra/observability"
 	"go-infra-starter/internal/infra/persistence"
 	kruntime "go-infra-starter/internal/infra/runtime"
@@ -13,10 +15,12 @@ import (
 )
 
 type App struct {
-	cfg   *config.App
-	router *gin.Engine
-	mysql *persistence.MySQLState
-	redis *persistence.RedisState
+	cfg        *config.App
+	router     *gin.Engine
+	mysql      *persistence.MySQLState
+	redis      *persistence.RedisState
+	httpClient *network.HTTPClientState
+	llm        *ai.LLMState
 }
 
 func New() (*App, error) {
@@ -44,6 +48,11 @@ func New() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	httpClientState := network.InitHTTPClient(cfg)
+	llmState, err := ai.InitLLM(cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	kruntime.InitPprof(cfg)
 
@@ -52,10 +61,12 @@ func New() (*App, error) {
 	route.Setup(router)
 
 	return &App{
-		cfg:    cfg,
-		router: router,
-		mysql:  mysqlState,
-		redis:  redisState,
+		cfg:        cfg,
+		router:     router,
+		mysql:      mysqlState,
+		redis:      redisState,
+		httpClient: httpClientState,
+		llm:        llmState,
 	}, nil
 }
 

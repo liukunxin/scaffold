@@ -75,8 +75,8 @@ github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/leodido/go-urn v1.4.0 h1:WT9HwE9SGECu3lg4d/dIA+jxlljEa1/ffXKmRjqdmIQ=
 github.com/leodido/go-urn v1.4.0/go.mod h1:bvxc+MVxLKB4z00jd1z+Dvzr47oO32F/QSNjSBOlFxI=
-github.com/liukunxin/go-infra v0.0.0-20260430095106-43b1d2a8c928 h1:ibBLkPvlXX9iaKtQdHYF8lf/QFCD4BlZR5oclCbq/bQ=
-github.com/liukunxin/go-infra v0.0.0-20260430095106-43b1d2a8c928/go.mod h1:gVyoEnVLJ7+2QL8CGcFmzd1H2H16GAE3msqTkumfm38=
+github.com/liukunxin/go-infra v0.0.0-20260514022320-81fbb21ba2d5 h1:1NGD5FzUjSDv9gPqpqVrUFQqNaeezTpDste1TSL4ldg=
+github.com/liukunxin/go-infra v0.0.0-20260514022320-81fbb21ba2d5/go.mod h1:gVyoEnVLJ7+2QL8CGcFmzd1H2H16GAE3msqTkumfm38=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=

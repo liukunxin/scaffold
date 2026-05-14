@@ -5,5 +5,9 @@ trace:
   sample_ratio: 1
 
 features:
+  redis: false
   metrics: true
+  pprof: false
+  http_client: false
+  llm: false
 

@@ -4,7 +4,7 @@ go 1.23.8
 
 require (
 	github.com/gin-gonic/gin v1.11.0
-	github.com/liukunxin/go-infra v0.0.0-20260430095106-43b1d2a8c928
+	github.com/liukunxin/go-infra v0.0.0-20260514022320-81fbb21ba2d5
 )
 
 require (

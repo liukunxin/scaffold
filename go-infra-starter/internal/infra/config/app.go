@@ -5,6 +5,8 @@ import (
 
 	klog "github.com/liukunxin/go-infra/pkg/base/log"
 	"github.com/liukunxin/go-infra/pkg/base/trace"
+	"github.com/liukunxin/go-infra/pkg/infra/http_client"
+	"github.com/liukunxin/go-infra/pkg/infra/llm"
 	"github.com/liukunxin/go-infra/pkg/infra/mysql"
 	redis "github.com/liukunxin/go-infra/pkg/infra/redis/v8"
 )
@@ -18,6 +20,8 @@ type App struct {
 	Trace trace.Config  `yaml:"trace"`
 	Mysql mysql.Config  `yaml:"mysql"`
 	Redis redis.Config  `yaml:"redis"`
+	HTTP  http_client.Config `yaml:"http_client"`
+	LLM   llm.Config         `yaml:"llm"`
 
 	// 以下为项目级能力开关（编排层），不是 go-infra SDK 内置 Config。
 	Features FeaturesConfig `yaml:"features"`
@@ -28,9 +32,11 @@ type ServerConfig struct {
 }
 
 type FeaturesConfig struct {
-	Redis   bool `yaml:"redis"`
-	Metrics bool `yaml:"metrics"`
-	Pprof   bool `yaml:"pprof"`
+	Redis      bool `yaml:"redis"`
+	Metrics    bool `yaml:"metrics"`
+	Pprof      bool `yaml:"pprof"`
+	HTTPClient bool `yaml:"http_client"`
+	LLM        bool `yaml:"llm"`
 }
 
 func (a *App) Validate() error {

@@ -16,7 +16,7 @@ go-infra-cli version
 go-infra-cli init myapp \
   --module github.com/acme/myapp \
   --output . \
-  --features redis,pprof,cursor-rules
+  --features redis,pprof,http-client,llm,cursor-rules
 ```
 
 ## init 参数
@@ -26,11 +26,11 @@ go-infra-cli init myapp \
 - `--output`: 输出目录，默认当前目录
 - `--template`: 模板目录；不传时自动查找 `go-infra-starter`（也兼容 `scaffold/go-infra-starter`）
 - `--force`: 目标目录存在时覆盖
-- `--features`: 功能开关集合（逗号分隔），如 `redis,metrics,pprof,cursor-rules`
+- `--features`: 功能开关集合（逗号分隔），如 `redis,metrics,pprof,http-client,llm,cursor-rules`
 - `--with-mysql`: 保留 mysql 集成骨架（默认 `true`）
 - `--skip-tidy`: 跳过 `go mod tidy`
 
-> 不传 `--features` 时默认值：`metrics=true`，`redis=false`，`pprof=false`，`cursor-rules=false`。
+> 不传 `--features` 时默认值：`metrics=true`，`redis=false`，`pprof=false`，`http-client=false`，`llm=false`，`cursor-rules=false`。
 
 ## Cursor 规范文件开关
 
@@ -44,6 +44,15 @@ go-infra-cli init myapp \
 ```bash
 go-infra-cli init myapp --output . --features metrics,cursor-rules
 ```
+
+## Feature 说明
+
+- `redis`: 启用 Redis 初始化（`features.redis=true`）
+- `metrics`: 启用 `/metrics` 指标上报（默认开启）
+- `pprof`: 启用 pprof runtime 诊断入口
+- `http-client`: 启用 `go-infra/pkg/infra/http_client` 全局客户端初始化
+- `llm`: 启用 `go-infra/pkg/infra/llm` 初始化（当配置了 `llm.providers` 时生效）
+- `cursor-rules`: 生成 `.cursor/rules` 与 `AGENTS.md`
 
 ## 版本注入
 

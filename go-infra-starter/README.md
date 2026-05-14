@@ -15,19 +15,28 @@ go-infra-starter/
 ├─ configs/
 ├─ internal/
 │  ├─ app/                          # 业务域（垂直切片）
-│  │  └─ user/
+│  │  ├─ user/
+│  │  │  ├─ controller/
+│  │  │  ├─ logic/
+│  │  │  ├─ service/
+│  │  │  ├─ dao/
+│  │  │  ├─ model/
+│  │  │  ├─ ro/
+│  │  │  ├─ dto/
+│  │  │  ├─ vo/
+│  │  │  └─ convert/
+│  │  └─ llm/
 │  │     ├─ controller/
 │  │     ├─ logic/
 │  │     ├─ service/
-│  │     ├─ dao/
-│  │     ├─ model/
 │  │     ├─ ro/
 │  │     ├─ dto/
-│  │     ├─ vo/
-│  │     └─ convert/
+│  │     └─ vo/
 │  ├─ bootstrap/
 │  ├─ infra/                        # 技术适配层
+│  │  ├─ ai/
 │  │  ├─ config/
+│  │  ├─ network/
 │  │  ├─ observability/
 │  │  ├─ persistence/
 │  │  └─ runtime/
@@ -52,10 +61,12 @@ go-infra-starter/
   - `trace`: `pkg/base/trace.Config`
   - `mysql`: `pkg/infra/mysql.Config`
   - `redis`: `pkg/infra/redis/v8.Config`
+  - `http_client`: `pkg/infra/http_client.Config`
+  - `llm`: `pkg/infra/llm.Config`
 - **项目自定义字段（编排层）**
   - `app_name`: 服务名（用于 trace/metrics 默认命名）
   - `server.address`: HTTP 监听地址
-  - `features`: 运行期开关（`redis` / `metrics` / `pprof`）
+  - `features`: 运行期开关（`redis` / `metrics` / `pprof` / `http_client` / `llm`）
 
 示例：
 
@@ -78,6 +89,30 @@ features:
   redis: false
   metrics: true
   pprof: false
+  http_client: false
+  llm: false
+
+http_client:
+  timeout: 30s
+  max_idle_conns: 100
+
+llm:
+  default_provider: ""
+  default_model: ""
+  providers: {}
+```
+
+当开启 `features.llm=true` 时，需至少配置一个 provider，例如：
+
+```yaml
+llm:
+  default_provider: deepseek
+  default_model: deepseek-chat
+  providers:
+    deepseek:
+      type: openai_compatible
+      base_url: https://api.deepseek.com/v1
+      api_key_env: DEEPSEEK_API_KEY
 ```
 
 ## 快速运行
@@ -97,6 +132,15 @@ go run ./cmd/http
 - `GET /health`
 - `POST /api/v1/users`
 - `GET /api/v1/users/:id`
+- `POST /api/v1/llm/ping`
+
+LLM 验证示例：
+
+```bash
+curl -X POST "http://127.0.0.1:8080/api/v1/llm/ping" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"用一句话介绍 go-infra"}'
+```
 
 > 说明：示例 `user dao` 采用内存实现，便于开箱即跑。真实项目中将 `dao` 替换为 MySQL/GORM 实现即可。
 

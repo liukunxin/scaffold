@@ -5,6 +5,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/liukunxin/go-infra/pkg/biz/middlewares"
+	llmcontroller "go-infra-starter/internal/app/llm/controller"
+	llmlogic "go-infra-starter/internal/app/llm/logic"
+	llmservice "go-infra-starter/internal/app/llm/service"
 	"go-infra-starter/internal/app/user/controller"
 	"go-infra-starter/internal/app/user/dao"
 	"go-infra-starter/internal/app/user/logic"
@@ -21,6 +24,11 @@ func Setup(router *gin.Engine) {
 			),
 		),
 	)
+	llmController := llmcontroller.NewLLMController(
+		llmlogic.NewLLMLogic(
+			llmservice.NewLLMService(),
+		),
+	)
 
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -29,5 +37,5 @@ func Setup(router *gin.Engine) {
 	api := router.Group("/api/v1")
 	api.POST("/users", userController.CreateUser)
 	api.GET("/users/:id", userController.GetUser)
+	api.POST("/llm/ping", llmController.Ping)
 }
-
