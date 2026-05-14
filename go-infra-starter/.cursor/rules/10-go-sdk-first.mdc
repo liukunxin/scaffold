@@ -10,10 +10,12 @@ alwaysApply: false
 - Prefer SDK abstractions for config, logging, metrics, tracing, DB, cache, and middleware.
 - Keep custom wrappers thin and focused when SDK extension is required.
 - Keep SDK integration points inside `internal/infra` and expose business-facing interfaces upward.
+- If go-infra SDK already provides a capability, prefer reusing it and avoid rebuilding a parallel implementation.
 - Follow existing package layout and file naming in this starter.
 - Return wrapped errors with context (`fmt.Errorf("...: %w", err)`).
 - Keep logs structured and include stable keys.
 - Prefer table-driven tests for core business branches.
+- Add concise Chinese comments for each method declared under an interface.
 
 ## Required behavior for code generation
 

@@ -44,9 +44,12 @@ func New() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	redisState, err := persistence.InitRedis(cfg)
-	if err != nil {
-		return nil, err
+	redisState := &persistence.RedisState{Enabled: false}
+	if cfg.Features.Redis {
+		redisState, err = persistence.InitRedis(cfg)
+		if err != nil {
+			return nil, err
+		}
 	}
 	httpClientState := network.InitHTTPClient(cfg)
 	llmState, err := ai.InitLLM(cfg)
@@ -79,4 +82,3 @@ func (a *App) Close() {
 	a.redis.Close()
 	observability.Close()
 }
-

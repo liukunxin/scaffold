@@ -9,7 +9,9 @@ import (
 )
 
 type UserController interface {
+	// CreateUser 创建用户并返回用户详情。
 	CreateUser(ctx *gin.Context)
+	// GetUser 根据用户ID查询用户详情。
 	GetUser(ctx *gin.Context)
 }
 
@@ -46,4 +48,3 @@ func (c *userController) GetUser(ctx *gin.Context) {
 	}
 	c.SuccessResponse(ctx, data)
 }
-

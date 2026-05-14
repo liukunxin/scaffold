@@ -7,6 +7,7 @@ import (
 )
 
 type LLMService interface {
+	// AskText 调用LLM文本问答能力。
 	AskText(ctx context.Context, prompt string) (string, error)
 }
 

@@ -9,7 +9,9 @@ import (
 )
 
 type UserRepo interface {
+	// Create 持久化用户实体。
 	Create(ctx context.Context, user *model.User) error
+	// GetByID 按ID查询用户实体。
 	GetByID(ctx context.Context, id string) (*model.User, error)
 }
 
@@ -41,4 +43,3 @@ func (r *memoryUserRepo) GetByID(_ context.Context, id string) (*model.User, err
 	}
 	return user, nil
 }
-

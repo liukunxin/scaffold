@@ -12,7 +12,9 @@ import (
 )
 
 type UserService interface {
+	// Create 执行用户创建并写入仓储。
 	Create(ctx context.Context, in *dto.CreateUserInput) (*model.User, error)
+	// GetByID 按用户ID读取用户实体。
 	GetByID(ctx context.Context, id string) (*model.User, error)
 }
 
@@ -42,4 +44,3 @@ func (s *userService) Create(ctx context.Context, in *dto.CreateUserInput) (*mod
 func (s *userService) GetByID(ctx context.Context, id string) (*model.User, error) {
 	return s.repo.GetByID(ctx, id)
 }
-

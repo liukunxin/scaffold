@@ -10,6 +10,7 @@ import (
 )
 
 type LLMLogic interface {
+	// Ping 编排LLM探活请求并返回探活结果。
 	Ping(ctx context.Context, in *dto.PingInput) (*vo.PingResp, error)
 }
 

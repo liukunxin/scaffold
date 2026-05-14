@@ -11,6 +11,7 @@ import (
 )
 
 type LLMController interface {
+	// Ping 验证LLM链路可用性并返回模型回复。
 	Ping(ctx *gin.Context)
 }
 

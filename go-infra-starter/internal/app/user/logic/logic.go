@@ -10,7 +10,9 @@ import (
 )
 
 type UserLogic interface {
+	// CreateUser 编排创建用户流程并返回视图对象。
 	CreateUser(ctx context.Context, in *dto.CreateUserInput) (*vo.UserDetail, error)
+	// GetUser 编排按ID查询用户流程并返回视图对象。
 	GetUser(ctx context.Context, id string) (*vo.UserDetail, error)
 }
 
@@ -37,4 +39,3 @@ func (l *userLogic) GetUser(ctx context.Context, id string) (*vo.UserDetail, err
 	}
 	return convert.ModelToVO(user), nil
 }
-
