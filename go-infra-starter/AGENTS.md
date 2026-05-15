@@ -16,6 +16,8 @@ This repository follows a layered Go architecture based on shared SDK capabiliti
 - `internal/app`: business use-cases, DTO/VO/RO, services, controller, dao contracts.
 - `internal/infra`: adapters for config, persistence, observability, runtime integrations.
 - `internal/route`: route registration and transport glue.
+- `internal/app/*/logic`: use only for cross-service/domain orchestration.
+- For simple single-service pass-through, prefer `controller -> service` directly.
 
 Business-facing packages should not directly depend on concrete external clients when an SDK abstraction already exists.
 
