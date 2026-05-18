@@ -6,8 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 	kcontroller "github.com/liukunxin/go-infra/pkg/biz/controller"
 	"go-infra-starter/internal/app/llm/dto"
-	"go-infra-starter/internal/app/llm/logic"
 	"go-infra-starter/internal/app/llm/ro"
+	"go-infra-starter/internal/app/llm/service"
+	"go-infra-starter/internal/app/llm/vo"
+	"go-infra-starter/internal/infra/ai"
 )
 
 type LLMController interface {
@@ -17,11 +19,11 @@ type LLMController interface {
 
 type llmController struct {
 	kcontroller.GinBase
-	llmLogic logic.LLMLogic
+	llmService service.LLMService
 }
 
-func NewLLMController(llmLogic logic.LLMLogic) LLMController {
-	return &llmController{llmLogic: llmLogic}
+func NewLLMController(llmService service.LLMService) LLMController {
+	return &llmController{llmService: llmService}
 }
 
 func (c *llmController) Ping(ctx *gin.Context) {
@@ -31,10 +33,13 @@ func (c *llmController) Ping(ctx *gin.Context) {
 		return
 	}
 
-	data, err := c.llmLogic.Ping(ctx, &dto.PingInput{Prompt: req.Prompt})
+	data, err := c.llmService.AskText(ctx, dto.PingInput{Prompt: req.Prompt})
 	if err != nil {
 		c.ErrorResponse(ctx, err)
 		return
 	}
-	c.SuccessResponse(ctx, data)
+	c.SuccessResponse(ctx, &vo.PingResp{
+		Enabled: ai.Enabled(),
+		Reply:   data,
+	})
 }

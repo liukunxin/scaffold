@@ -13,6 +13,7 @@ alwaysApply: true
 - Keep package responsibilities aligned with starter layout (`internal/app`, `internal/infra`, `internal/bootstrap`, `internal/route`).
 - Use `logic` only when orchestrating multiple services/domains or handling cross-service business workflows.
 - For simple single-service pass-through flows, `controller -> service` is preferred and `logic` can be omitted.
+- Keep both patterns explicit in starter examples: one module with `controller -> logic -> service -> dao`, and one module with `controller -> service`.
 - Keep backward compatibility unless a breaking change is explicitly requested.
 
 ## Must Not

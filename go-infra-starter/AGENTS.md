@@ -18,6 +18,7 @@ This repository follows a layered Go architecture based on shared SDK capabiliti
 - `internal/route`: route registration and transport glue.
 - `internal/app/*/logic`: use only for cross-service/domain orchestration.
 - For simple single-service pass-through, prefer `controller -> service` directly.
+- Keep both patterns visible in starter examples (one module with logic, one module without logic).
 
 Business-facing packages should not directly depend on concrete external clients when an SDK abstraction already exists.
 
@@ -35,3 +36,5 @@ Before adding a new package or utility:
 - No cross-layer shortcut imports.
 - Config keys and observability tags stay consistent.
 - New files follow current naming and folder conventions.
+- Every interface method has concise Chinese comments.
+- Avoid adding method comments on concrete implementation methods unless specifically required.

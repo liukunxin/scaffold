@@ -2,7 +2,7 @@
 
 一个可单独提取的新项目骨架，目标是：
 
-- 保留 `controller -> logic -> service -> dao` 四层风格
+- 同时提供两种分层示例：`controller -> logic -> service -> dao`（四层）与 `controller -> service`（三层）
 - 增加 `internal/infra` 技术适配层，隔离外部组件细节
 - 使用 `go-infra` 完成 config/log/trace/mysql/redis/metrics 初始化
 - 通过 `bootstrap` 统一启动编排，保证入口清晰
@@ -27,7 +27,6 @@ go-infra-starter/
 │  │  │  └─ convert/
 │  │  └─ llm/
 │  │     ├─ controller/
-│  │     ├─ logic/
 │  │     ├─ service/
 │  │     ├─ ro/
 │  │     ├─ dto/
@@ -39,7 +38,8 @@ go-infra-starter/
 │  │  ├─ network/
 │  │  ├─ observability/
 │  │  ├─ persistence/
-│  │  └─ runtime/
+│  │  ├─ runtime/
+│  │  └─ traffic/
 │  └─ route/
 └─ go.mod
 ```
@@ -47,10 +47,15 @@ go-infra-starter/
 ## 分层职责
 
 - `controller`: 参数绑定、鉴权上下文读取、统一响应
-- `logic`: 用例编排、跨 service 聚合、事务边界入口
+- `logic`: 用例编排、跨 service 聚合、事务边界入口（按需使用）
 - `service`: 业务规则、状态流转、外部能力调用
 - `dao`: 数据访问与查询封装，不承载业务决策
 - `infra`: 技术细节适配（配置、日志、追踪、存储、运行时）
+
+示例约定：
+
+- `user` 模块演示四层（`controller -> logic -> service -> dao`）
+- `llm` 模块演示三层（`controller -> service`，无 `logic`）
 
 ## 配置约定说明
 
@@ -66,7 +71,8 @@ go-infra-starter/
 - **项目自定义字段（编排层）**
   - `app_name`: 服务名（用于 trace/metrics 默认命名）
   - `server.address`: HTTP 监听地址
-  - `features`: 运行期开关（`redis` / `metrics` / `pprof` / `http_client` / `llm`）
+  - `features`: 运行期开关（`mysql` / `redis` / `metrics` / `pprof` / `http_client` / `traffic` / `llm`）
+  - `traffic`: 流控策略参数（默认使用限流控制器）
 
 示例：
 
@@ -86,15 +92,21 @@ redis:
   addresses: ["127.0.0.1:6379"]
 
 features:
+  mysql: true
   redis: false
   metrics: true
-  pprof: false
-  http_client: false
+  pprof: true
+  http_client: true
+  traffic: true
   llm: false
 
 http_client:
   timeout: 30s
   max_idle_conns: 100
+
+traffic:
+  rate_limit_qps: 200
+  rate_limit_burst: 50
 
 llm:
   default_provider: ""
@@ -144,13 +156,11 @@ curl -X POST "http://127.0.0.1:8080/api/v1/llm/ping" \
 
 > 说明：示例 `user dao` 采用内存实现，便于开箱即跑。真实项目中将 `dao` 替换为 MySQL/GORM 实现即可。
 
-## Cursor 协作规范（可选）
+## Cursor 协作规范
 
-当通过 `go-infra-cli` 初始化并启用 `cursor-rules` 特性时，项目会包含：
+通过 `go-infra-cli` 初始化时，项目会默认包含：
 
 - `AGENTS.md`: Agent 协作约定与分层边界说明
 - `.cursor/rules/00-architecture.mdc`: 分层架构、依赖方向与基础变更安全约束
 - `.cursor/rules/10-go-sdk-first.mdc`: SDK 优先复用与 Go 实现一致性约束
-
-如果初始化时未启用 `cursor-rules`，这些文件不会被保留。
 

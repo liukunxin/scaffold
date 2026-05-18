@@ -11,6 +11,7 @@ import (
 	"go-infra-starter/internal/infra/observability"
 	"go-infra-starter/internal/infra/persistence"
 	kruntime "go-infra-starter/internal/infra/runtime"
+	inftraffic "go-infra-starter/internal/infra/traffic"
 	"go-infra-starter/internal/route"
 )
 
@@ -40,9 +41,12 @@ func New() (*App, error) {
 		return nil, err
 	}
 
-	mysqlState, err := persistence.InitMySQL(cfg)
-	if err != nil {
-		return nil, err
+	mysqlState := &persistence.MySQLState{Enabled: false}
+	if cfg.Features.MySQL {
+		mysqlState, err = persistence.InitMySQL(cfg)
+		if err != nil {
+			return nil, err
+		}
 	}
 	redisState := &persistence.RedisState{Enabled: false}
 	if cfg.Features.Redis {
@@ -52,6 +56,9 @@ func New() (*App, error) {
 		}
 	}
 	httpClientState := network.InitHTTPClient(cfg)
+	if err = inftraffic.InitTraffic(cfg); err != nil {
+		return nil, err
+	}
 	llmState, err := ai.InitLLM(cfg)
 	if err != nil {
 		return nil, err

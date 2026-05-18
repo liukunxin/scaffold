@@ -14,10 +14,12 @@ trace:
   sample_ratio: 1
 
 features:
+  mysql: true
   redis: false
   metrics: true
-  pprof: false
-  http_client: false
+  pprof: true
+  http_client: true
+  traffic: true
   llm: false
 
 mysql:
@@ -47,6 +49,10 @@ http_client:
   idle_conn_timeout: 90s
   tls_handshake_timeout: 10s
   max_response_body_bytes: 33554432
+
+traffic:
+  rate_limit_qps: 200
+  rate_limit_burst: 50
 
 llm:
   default_provider: ""

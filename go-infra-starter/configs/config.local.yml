@@ -5,9 +5,11 @@ trace:
   sample_ratio: 1
 
 features:
+  mysql: true
   redis: false
   metrics: true
-  pprof: false
-  http_client: false
+  pprof: true
+  http_client: true
+  traffic: true
   llm: false
 

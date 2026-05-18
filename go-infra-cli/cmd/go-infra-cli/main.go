@@ -45,8 +45,7 @@ func printUsage() {
 	fmt.Println("  --output        output directory (default: current directory)")
 	fmt.Println("  --template      starter template directory (default: auto-detect go-infra-starter)")
 	fmt.Println("  --force         overwrite existing target directory")
-	fmt.Println("  --features      comma-separated features, e.g. redis,metrics,pprof,http-client,llm,cursor-rules")
-	fmt.Println("  --with-mysql    keep mysql integration scaffold (default: true)")
+	fmt.Println("  --features      comma-separated features, e.g. mysql,redis,metrics,pprof,http-client,traffic,llm")
 	fmt.Println("  --skip-tidy     skip running go mod tidy")
 }
 
@@ -57,8 +56,7 @@ func runInit(args []string) error {
 	output := fs.String("output", ".", "output directory")
 	template := fs.String("template", "", "template directory path")
 	force := fs.Bool("force", false, "overwrite existing directory")
-	features := fs.String("features", "", "comma-separated feature flags: redis,metrics,pprof,http-client,llm,cursor-rules")
-	withMySQL := fs.Bool("with-mysql", true, "keep mysql integration scaffold")
+	features := fs.String("features", "", "comma-separated feature flags: mysql,redis,metrics,pprof,http-client,traffic,llm")
 	skipTidy := fs.Bool("skip-tidy", false, "skip go mod tidy")
 
 	var projectName string
@@ -90,7 +88,7 @@ func runInit(args []string) error {
 		*appName = projectName
 	}
 
-	resolvedRedis, resolvedMetrics, resolvedPprof, resolvedHTTPClient, resolvedLLM, resolvedCursorRules, err := parseFeaturesArg(*features)
+	resolvedMySQL, resolvedRedis, resolvedMetrics, resolvedPprof, resolvedHTTPClient, resolvedTraffic, resolvedLLM, err := parseFeaturesArg(*features)
 	if err != nil {
 		return err
 	}
@@ -117,10 +115,10 @@ func runInit(args []string) error {
 	if err = replaceStarterStrings(targetDir, *moduleName); err != nil {
 		return err
 	}
-	if err = updateConfigYAML(filepath.Join(targetDir, "configs", "config.yml"), *appName, resolvedRedis, resolvedMetrics, resolvedPprof, resolvedHTTPClient, resolvedLLM); err != nil {
+	if err = updateConfigYAML(filepath.Join(targetDir, "configs", "config.yml"), *appName, resolvedMySQL, resolvedRedis, resolvedMetrics, resolvedPprof, resolvedHTTPClient, resolvedTraffic, resolvedLLM); err != nil {
 		return err
 	}
-	if err = applyFeatureFlags(targetDir, *withMySQL, resolvedCursorRules); err != nil {
+	if err = applyFeatureFlags(targetDir, resolvedMySQL); err != nil {
 		return err
 	}
 
@@ -239,7 +237,7 @@ func replaceStarterStrings(targetDir, moduleName string) error {
 	})
 }
 
-func updateConfigYAML(path, appName string, withRedis, withMetrics, withPprof, withHTTPClient, withLLM bool) error {
+func updateConfigYAML(path, appName string, withMySQL, withRedis, withMetrics, withPprof, withHTTPClient, withTraffic, withLLM bool) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -250,6 +248,10 @@ func updateConfigYAML(path, appName string, withRedis, withMetrics, withPprof, w
 	metricsValue := "false"
 	if withMetrics {
 		metricsValue = "true"
+	}
+	mysqlValue := "false"
+	if withMySQL {
+		mysqlValue = "true"
 	}
 	redisValue := "false"
 	if withRedis {
@@ -263,48 +265,55 @@ func updateConfigYAML(path, appName string, withRedis, withMetrics, withPprof, w
 	if withHTTPClient {
 		httpClientValue = "true"
 	}
+	trafficValue := "false"
+	if withTraffic {
+		trafficValue = "true"
+	}
 	llmValue := "false"
 	if withLLM {
 		llmValue = "true"
 	}
 	content = replaceLineByPrefix(content, "metrics:", "metrics: "+metricsValue)
+	content = replaceLineByPrefix(content, "mysql:", "mysql: "+mysqlValue)
 	content = replaceLineByPrefix(content, "redis:", "redis: "+redisValue)
 	content = replaceLineByPrefix(content, "pprof:", "pprof: "+pprofValue)
 	content = replaceLineByPrefix(content, "http_client:", "http_client: "+httpClientValue)
+	content = replaceLineByPrefix(content, "traffic:", "traffic: "+trafficValue)
 	content = replaceLineByPrefix(content, "llm:", "llm: "+llmValue)
 	return os.WriteFile(path, []byte(content), 0o644)
 }
 
-func parseFeaturesArg(features string) (bool, bool, bool, bool, bool, bool, error) {
+func parseFeaturesArg(features string) (bool, bool, bool, bool, bool, bool, bool, error) {
 	// 默认值与模板保持一致。
 	enabled := map[string]bool{
+		"mysql":       true,
 		"redis":       false,
 		"metrics":     true,
-		"pprof":       false,
-		"http-client": false,
+		"pprof":       true,
+		"http-client": true,
+		"traffic":     true,
 		"llm":         false,
-		"cursor-rules": false,
 	}
 	if strings.TrimSpace(features) == "" {
-		return enabled["redis"], enabled["metrics"], enabled["pprof"], enabled["http-client"], enabled["llm"], enabled["cursor-rules"], nil
+		return enabled["mysql"], enabled["redis"], enabled["metrics"], enabled["pprof"], enabled["http-client"], enabled["traffic"], enabled["llm"], nil
 	}
 
 	// 一旦显式指定 --features，则以显式列表为准。
-	enabled["redis"], enabled["metrics"], enabled["pprof"], enabled["http-client"], enabled["llm"], enabled["cursor-rules"] = false, false, false, false, false, false
+	enabled["mysql"], enabled["redis"], enabled["metrics"], enabled["pprof"], enabled["http-client"], enabled["traffic"], enabled["llm"] = false, false, false, false, false, false, false
 	for _, item := range strings.Split(features, ",") {
 		key := strings.ToLower(strings.TrimSpace(item))
 		if key == "" {
 			continue
 		}
 		if _, ok := enabled[key]; !ok {
-			return false, false, false, false, false, false, fmt.Errorf("unsupported feature %q, allowed: redis,metrics,pprof,http-client,llm,cursor-rules", key)
+			return false, false, false, false, false, false, false, fmt.Errorf("unsupported feature %q, allowed: mysql,redis,metrics,pprof,http-client,traffic,llm", key)
 		}
 		enabled[key] = true
 	}
-	return enabled["redis"], enabled["metrics"], enabled["pprof"], enabled["http-client"], enabled["llm"], enabled["cursor-rules"], nil
+	return enabled["mysql"], enabled["redis"], enabled["metrics"], enabled["pprof"], enabled["http-client"], enabled["traffic"], enabled["llm"], nil
 }
 
-func applyFeatureFlags(targetDir string, withMySQL, withCursorRules bool) error {
+func applyFeatureFlags(targetDir string, withMySQL bool) error {
 	if !withMySQL {
 		configPath := filepath.Join(targetDir, "configs", "config.yml")
 		data, err := os.ReadFile(configPath)
@@ -315,15 +324,6 @@ func applyFeatureFlags(targetDir string, withMySQL, withCursorRules bool) error 
 		if err = os.WriteFile(configPath, []byte(content), 0o644); err != nil {
 			return err
 		}
-	}
-	if withCursorRules {
-		return nil
-	}
-	if err := os.RemoveAll(filepath.Join(targetDir, ".cursor")); err != nil {
-		return err
-	}
-	if err := os.Remove(filepath.Join(targetDir, "AGENTS.md")); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return err
 	}
 	return nil
 }
@@ -384,4 +384,3 @@ func fileOrDirExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
 }
-

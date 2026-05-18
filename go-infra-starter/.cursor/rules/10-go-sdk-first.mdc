@@ -16,6 +16,7 @@ alwaysApply: false
 - Keep logs structured and include stable keys.
 - Prefer table-driven tests for core business branches.
 - Add concise Chinese comments for each method declared under an interface.
+- Do not add method comments on concrete implementation methods unless explicitly requested.
 
 ## Required behavior for code generation
 
