@@ -1,16 +1,5 @@
 log:
-  level: 1
-  formatter: json
+  level: 2
 
 trace:
   sample_ratio: 0.1
-
-features:
-  mysql: true
-  redis: false
-  metrics: true
-  pprof: true
-  http_client: true
-  traffic: true
-  llm: false
-

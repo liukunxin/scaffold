@@ -11,6 +11,7 @@ alwaysApply: true
 - `internal/route` handles transport wiring, not business orchestration.
 - Prefer constructor injection over global state.
 - Keep package responsibilities aligned with starter layout (`internal/app`, `internal/infra`, `internal/bootstrap`, `internal/route`).
+- Keep `ro/dto/vo/convert` module-local by default. If something truly needs cross-project reuse, extract it to SDK packages rather than creating app-global object pools.
 - Use `logic` only when orchestrating multiple services/domains or handling cross-service business workflows.
 - For simple single-service pass-through flows, `controller -> service` is preferred and `logic` can be omitted.
 - Keep both patterns visible in starter examples: one module with `controller -> logic -> service -> dao`, and one module with `controller -> service`.

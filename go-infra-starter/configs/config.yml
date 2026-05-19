@@ -13,15 +13,6 @@ trace:
   service_name: go-infra-starter
   sample_ratio: 1
 
-features:
-  mysql: true
-  redis: false
-  metrics: true
-  pprof: true
-  http_client: true
-  traffic: true
-  llm: false
-
 mysql:
   dsn: ""
   max_open_conns: 100
@@ -59,4 +50,3 @@ llm:
   default_model: ""
   providers: {}
   fallbacks: []
-

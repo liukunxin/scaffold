@@ -23,23 +23,10 @@ type App struct {
 	HTTP    http_client.Config `yaml:"http_client"`
 	Traffic TrafficConfig      `yaml:"traffic"`
 	LLM     llm.Config         `yaml:"llm"`
-
-	// 以下为项目级能力开关（编排层），不是 go-infra SDK 内置 Config。
-	Features FeaturesConfig `yaml:"features"`
 }
 
 type ServerConfig struct {
 	Address string `yaml:"address" validate:"required"`
-}
-
-type FeaturesConfig struct {
-	MySQL      bool `yaml:"mysql"`
-	Redis      bool `yaml:"redis"`
-	Metrics    bool `yaml:"metrics"`
-	Pprof      bool `yaml:"pprof"`
-	HTTPClient bool `yaml:"http_client"`
-	Traffic    bool `yaml:"traffic"`
-	LLM        bool `yaml:"llm"`
 }
 
 type TrafficConfig struct {

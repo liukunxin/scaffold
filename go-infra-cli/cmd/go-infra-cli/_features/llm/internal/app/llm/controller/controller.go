@@ -9,7 +9,6 @@ import (
 	"go-infra-starter/internal/app/llm/ro"
 	"go-infra-starter/internal/app/llm/service"
 	"go-infra-starter/internal/app/llm/vo"
-	"go-infra-starter/internal/infra/ai"
 )
 
 type LLMController interface {
@@ -38,8 +37,5 @@ func (c *llmController) Ping(ctx *gin.Context) {
 		c.ErrorResponse(ctx, err)
 		return
 	}
-	c.SuccessResponse(ctx, &vo.PingResp{
-		Enabled: ai.Enabled(),
-		Reply:   data,
-	})
+	c.SuccessResponse(ctx, &vo.PingResp{Reply: data})
 }

@@ -26,6 +26,16 @@ func main() {
 			fmt.Fprintf(os.Stderr, "init failed: %v\n", err)
 			os.Exit(1)
 		}
+	case "add":
+		if err := runAdd(os.Args[2:]); err != nil {
+			fmt.Fprintf(os.Stderr, "add failed: %v\n", err)
+			os.Exit(1)
+		}
+	case "remove":
+		if err := runRemove(os.Args[2:]); err != nil {
+			fmt.Fprintf(os.Stderr, "remove failed: %v\n", err)
+			os.Exit(1)
+		}
 	case "version":
 		fmt.Println(version)
 	default:
@@ -37,7 +47,15 @@ func main() {
 func printUsage() {
 	fmt.Println("go-infra-cli usage:")
 	fmt.Println("  go-infra-cli init <project-name> [flags]")
+	fmt.Println("  go-infra-cli add <features> [flags]")
+	fmt.Println("  go-infra-cli remove <features> [flags]")
 	fmt.Println("  go-infra-cli version")
+	fmt.Println()
+	fmt.Println("add/remove flags:")
+	fmt.Println("  --dir           project root (default: auto-detect from cwd)")
+	fmt.Println()
+	fmt.Println("add/remove features (install/remove bootstrap wiring, standard go-infra-starter layout required):")
+	fmt.Println("  mysql,redis,metrics,pprof,http-client,traffic")
 	fmt.Println()
 	fmt.Println("init flags:")
 	fmt.Println("  --module        module name (default: project-name)")
@@ -45,7 +63,8 @@ func printUsage() {
 	fmt.Println("  --output        output directory (default: current directory)")
 	fmt.Println("  --template      starter template directory (default: auto-detect go-infra-starter)")
 	fmt.Println("  --force         overwrite existing target directory")
-	fmt.Println("  --features      comma-separated features, e.g. mysql,redis,metrics,pprof,http-client,traffic,llm")
+	fmt.Println("  --features      comma-separated install list, e.g. mysql,redis,metrics,pprof,http-client,traffic,llm")
+	fmt.Println("                  (default: install none; only baseline log/trace/errors)")
 	fmt.Println("  --skip-tidy     skip running go mod tidy")
 }
 
@@ -56,7 +75,7 @@ func runInit(args []string) error {
 	output := fs.String("output", ".", "output directory")
 	template := fs.String("template", "", "template directory path")
 	force := fs.Bool("force", false, "overwrite existing directory")
-	features := fs.String("features", "", "comma-separated feature flags: mysql,redis,metrics,pprof,http-client,traffic,llm")
+	features := fs.String("features", "", "comma-separated install list: mysql,redis,metrics,pprof,http-client,traffic,llm")
 	skipTidy := fs.Bool("skip-tidy", false, "skip go mod tidy")
 
 	var projectName string
@@ -88,7 +107,7 @@ func runInit(args []string) error {
 		*appName = projectName
 	}
 
-	resolvedMySQL, resolvedRedis, resolvedMetrics, resolvedPprof, resolvedHTTPClient, resolvedTraffic, resolvedLLM, err := parseFeaturesArg(*features)
+	configFlags, resolvedLLM, err := parseInitFeaturesArg(*features)
 	if err != nil {
 		return err
 	}
@@ -111,14 +130,20 @@ func runInit(args []string) error {
 	if err = copyTree(templateDir, targetDir); err != nil {
 		return err
 	}
+	if err = applyLLMOverlay(targetDir, resolvedLLM); err != nil {
+		return err
+	}
+	if err = syncAllConfigFeatures(targetDir, configFlags); err != nil {
+		return err
+	}
 
 	if err = replaceStarterStrings(targetDir, *moduleName); err != nil {
 		return err
 	}
-	if err = updateConfigYAML(filepath.Join(targetDir, "configs", "config.yml"), *appName, resolvedMySQL, resolvedRedis, resolvedMetrics, resolvedPprof, resolvedHTTPClient, resolvedTraffic, resolvedLLM); err != nil {
+	if err = updateConfigYAML(filepath.Join(targetDir, "configs", "config.yml"), *appName); err != nil {
 		return err
 	}
-	if err = applyFeatureFlags(targetDir, resolvedMySQL); err != nil {
+	if err = applyInitMySQLDSN(targetDir, configFlags["mysql"]); err != nil {
 		return err
 	}
 
@@ -205,6 +230,12 @@ func copyTree(srcDir, dstDir string) error {
 		if err != nil {
 			return err
 		}
+		if rel == "_features" || strings.HasPrefix(rel, "_features"+string(filepath.Separator)) {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
 		if rel == "." {
 			return os.MkdirAll(dstDir, 0o755)
 		}
@@ -237,7 +268,7 @@ func replaceStarterStrings(targetDir, moduleName string) error {
 	})
 }
 
-func updateConfigYAML(path, appName string, withMySQL, withRedis, withMetrics, withPprof, withHTTPClient, withTraffic, withLLM bool) error {
+func updateConfigYAML(path, appName string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -245,87 +276,30 @@ func updateConfigYAML(path, appName string, withMySQL, withRedis, withMetrics, w
 	content := string(data)
 	content = replaceLineByPrefix(content, "app_name:", fmt.Sprintf("app_name: %s", appName))
 	content = replaceLineByPrefix(content, "service_name:", fmt.Sprintf("service_name: %s", appName))
-	metricsValue := "false"
-	if withMetrics {
-		metricsValue = "true"
-	}
-	mysqlValue := "false"
-	if withMySQL {
-		mysqlValue = "true"
-	}
-	redisValue := "false"
-	if withRedis {
-		redisValue = "true"
-	}
-	pprofValue := "false"
-	if withPprof {
-		pprofValue = "true"
-	}
-	httpClientValue := "false"
-	if withHTTPClient {
-		httpClientValue = "true"
-	}
-	trafficValue := "false"
-	if withTraffic {
-		trafficValue = "true"
-	}
-	llmValue := "false"
-	if withLLM {
-		llmValue = "true"
-	}
-	content = replaceLineByPrefix(content, "metrics:", "metrics: "+metricsValue)
-	content = replaceLineByPrefix(content, "mysql:", "mysql: "+mysqlValue)
-	content = replaceLineByPrefix(content, "redis:", "redis: "+redisValue)
-	content = replaceLineByPrefix(content, "pprof:", "pprof: "+pprofValue)
-	content = replaceLineByPrefix(content, "http_client:", "http_client: "+httpClientValue)
-	content = replaceLineByPrefix(content, "traffic:", "traffic: "+trafficValue)
-	content = replaceLineByPrefix(content, "llm:", "llm: "+llmValue)
 	return os.WriteFile(path, []byte(content), 0o644)
 }
 
-func parseFeaturesArg(features string) (bool, bool, bool, bool, bool, bool, bool, error) {
-	// 默认值与模板保持一致。
-	enabled := map[string]bool{
-		"mysql":       true,
-		"redis":       false,
-		"metrics":     true,
-		"pprof":       true,
-		"http-client": true,
-		"traffic":     true,
-		"llm":         false,
+func applyLLMOverlay(targetDir string, withLLM bool) error {
+	if !withLLM {
+		return nil
 	}
-	if strings.TrimSpace(features) == "" {
-		return enabled["mysql"], enabled["redis"], enabled["metrics"], enabled["pprof"], enabled["http-client"], enabled["traffic"], enabled["llm"], nil
-	}
-
-	// 一旦显式指定 --features，则以显式列表为准。
-	enabled["mysql"], enabled["redis"], enabled["metrics"], enabled["pprof"], enabled["http-client"], enabled["traffic"], enabled["llm"] = false, false, false, false, false, false, false
-	for _, item := range strings.Split(features, ",") {
-		key := strings.ToLower(strings.TrimSpace(item))
-		if key == "" {
-			continue
-		}
-		if _, ok := enabled[key]; !ok {
-			return false, false, false, false, false, false, false, fmt.Errorf("unsupported feature %q, allowed: mysql,redis,metrics,pprof,http-client,traffic,llm", key)
-		}
-		enabled[key] = true
-	}
-	return enabled["mysql"], enabled["redis"], enabled["metrics"], enabled["pprof"], enabled["http-client"], enabled["traffic"], enabled["llm"], nil
-}
-
-func applyFeatureFlags(targetDir string, withMySQL bool) error {
-	if !withMySQL {
-		configPath := filepath.Join(targetDir, "configs", "config.yml")
-		data, err := os.ReadFile(configPath)
-		if err != nil {
-			return err
-		}
-		content := replaceLineByPrefix(string(data), "  dsn:", `  dsn: ""`)
-		if err = os.WriteFile(configPath, []byte(content), 0o644); err != nil {
-			return err
-		}
+	if err := copyEmbeddedLLMOverlay(targetDir); err != nil {
+		return fmt.Errorf("apply llm feature overlay: %w", err)
 	}
 	return nil
+}
+
+func applyInitMySQLDSN(targetDir string, withMySQL bool) error {
+	if withMySQL {
+		return nil
+	}
+	configPath := filepath.Join(targetDir, "configs", "config.yml")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return err
+	}
+	content := replaceLineByPrefix(string(data), "  dsn:", `  dsn: ""`)
+	return os.WriteFile(configPath, []byte(content), 0o644)
 }
 
 func runGoModTidy(targetDir string) error {

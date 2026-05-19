@@ -7,6 +7,7 @@ import (
 	"github.com/liukunxin/go-infra/pkg/base/env"
 	"github.com/liukunxin/go-infra/pkg/base/log"
 	"github.com/liukunxin/go-infra/pkg/base/trace"
+	"go-infra-starter/internal/infra/ai"
 	"go-infra-starter/internal/infra/config"
 	"go-infra-starter/internal/route"
 	// FEATURE_IMPORTS_START
@@ -41,6 +42,9 @@ func New() (*App, error) {
 	}
 	// FEATURE_INIT_START
 	// FEATURE_INIT_END
+	if err = ai.InitLLM(cfg); err != nil {
+		return nil, err
+	}
 
 	router := gin.New()
 	// FEATURE_ROUTER_START

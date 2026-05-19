@@ -3,13 +3,3 @@ log:
 
 trace:
   sample_ratio: 1
-
-features:
-  mysql: true
-  redis: false
-  metrics: true
-  pprof: true
-  http_client: true
-  traffic: true
-  llm: false
-

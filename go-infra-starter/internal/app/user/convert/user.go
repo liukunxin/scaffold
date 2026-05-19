@@ -21,4 +21,3 @@ func ModelToVO(user *model.User) *vo.UserDetail {
 		Email: user.Email,
 	}
 }
-

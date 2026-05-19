@@ -7,6 +7,8 @@ import (
 	"github.com/liukunxin/go-infra/pkg/biz/middlewares"
 	democontroller "go-infra-starter/internal/app/demo/controller"
 	demoservice "go-infra-starter/internal/app/demo/service"
+	llmcontroller "go-infra-starter/internal/app/llm/controller"
+	llmservice "go-infra-starter/internal/app/llm/service"
 	"go-infra-starter/internal/app/user/controller"
 	"go-infra-starter/internal/app/user/dao"
 	"go-infra-starter/internal/app/user/logic"
@@ -26,6 +28,9 @@ func Setup(router *gin.Engine) {
 	demoController := democontroller.NewDemoController(
 		demoservice.NewDemoService(),
 	)
+	llmController := llmcontroller.NewLLMController(
+		llmservice.NewLLMService(),
+	)
 
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -35,4 +40,5 @@ func Setup(router *gin.Engine) {
 	api.POST("/users", userController.CreateUser)
 	api.GET("/users/:id", userController.GetUser)
 	api.GET("/demo/ping", demoController.Ping)
+	api.POST("/llm/ping", llmController.Ping)
 }
