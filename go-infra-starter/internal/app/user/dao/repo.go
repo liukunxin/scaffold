@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	kerr "github.com/liukunxin/go-infra/pkg/base/errors"
 	"go-infra-starter/internal/app/user/model"
 )
 
@@ -39,7 +40,11 @@ func (r *memoryUserRepo) GetByID(_ context.Context, id string) (*model.User, err
 
 	user, ok := r.data[id]
 	if !ok {
-		return nil, fmt.Errorf("user %s not found", id)
+		return nil, kerr.WrapError(
+			kerr.StatusNotFound,
+			40401,
+			fmt.Errorf("user %s not found", id),
+		)
 	}
 	return user, nil
 }

@@ -13,8 +13,41 @@ alwaysApply: true
 - Keep package responsibilities aligned with starter layout (`internal/app`, `internal/infra`, `internal/bootstrap`, `internal/route`).
 - Use `logic` only when orchestrating multiple services/domains or handling cross-service business workflows.
 - For simple single-service pass-through flows, `controller -> service` is preferred and `logic` can be omitted.
-- Keep both patterns explicit in starter examples: one module with `controller -> logic -> service -> dao`, and one module with `controller -> service`.
+- Keep both patterns visible in starter examples: one module with `controller -> logic -> service -> dao`, and one module with `controller -> service`.
 - Keep backward compatibility unless a breaking change is explicitly requested.
+
+## Baseline SDK (always on, not feature flags)
+
+These are project defaults and must stay enabled in new code:
+
+- **log**: `pkg/base/log` — initialized at bootstrap; use `log.WithContext(ctx)` for structured logs.
+- **trace**: `pkg/base/trace` — initialized at bootstrap; rely on middleware for request tracing.
+- **errors**: `pkg/base/errors` — business/service/dao layers return `WrapError` where HTTP status and business code matter; controllers use `GinBase.ErrorResponse` for unified JSON errors.
+
+Do not add parallel logging stacks, custom error envelopes, or bypass SDK response format in normal HTTP APIs.
+
+## MySQL / data model
+
+- **Do not use foreign keys** in MySQL schema design (no `FOREIGN KEY` constraints).
+- Enforce referential integrity and lifecycle in application/service layer.
+- Prefer explicit indexes for query paths; document cross-table consistency expectations in code or migration notes.
+
+## API boundary (backend vs frontend)
+
+Backend APIs provide **data and business outcomes**, not frontend orchestration.
+
+**Must not** (unless explicitly required and documented):
+
+- HTTP redirects that drive page navigation (`3xx` + `Location` for UI flow).
+- Setting browser session cookies for frontend login/navigation (`Set-Cookie` for page state).
+- Returning HTML fragments or scripts meant to control client routing.
+
+**Allowed exceptions** (keep narrow and justified):
+
+- Long-lived streaming endpoints (e.g. SSE/WebSocket) where transport semantics differ from normal JSON APIs.
+- OAuth/callback or file-download flows that inherently need redirect or `Content-Disposition` — isolate in dedicated handlers, not mixed into general CRUD APIs.
+
+Prefer JSON APIs with stable `code/msg/data/trace_id`; let the frontend own routing, storage, and UX state.
 
 ## Must Not
 

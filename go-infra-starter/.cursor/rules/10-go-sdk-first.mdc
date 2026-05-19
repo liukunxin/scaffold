@@ -8,15 +8,27 @@ alwaysApply: false
 
 - Always check whether existing SDK/base packages already solve the requirement.
 - Prefer SDK abstractions for config, logging, metrics, tracing, DB, cache, and middleware.
+- **Baseline (non-optional)**: use `pkg/base/log`, `pkg/base/trace`, and `pkg/base/errors` — do not reimplement equivalents.
 - Keep custom wrappers thin and focused when SDK extension is required.
 - Keep SDK integration points inside `internal/infra` and expose business-facing interfaces upward.
 - If go-infra SDK already provides a capability, prefer reusing it and avoid rebuilding a parallel implementation.
 - Follow existing package layout and file naming in this starter.
-- Return wrapped errors with context (`fmt.Errorf("...: %w", err)`).
-- Keep logs structured and include stable keys.
+- Return wrapped errors with context: prefer `errors.WrapError(status, code, err)` for API-facing failures; use `fmt.Errorf("...: %w", err)` only for internal propagation before wrapping.
+- Keep logs structured and include stable keys via `log.WithContext(ctx)`.
 - Prefer table-driven tests for core business branches.
 - Add concise Chinese comments for each method declared under an interface.
 - Do not add method comments on concrete implementation methods unless explicitly requested.
+
+## Errors and logging patterns
+
+- Controllers: delegate failures to `GinBase.ErrorResponse` / `SuccessResponse` — do not hand-build error JSON.
+- Service/dao: map domain failures to `pkg/base/errors.WrapError` with appropriate HTTP status and business code.
+- Logging: use SDK logger with context; avoid `fmt.Println`, ad-hoc zap/logrus setup, or duplicate log fields.
+
+## Data and HTTP handlers
+
+- MySQL migrations/models: **no foreign keys**; integrity belongs in application logic.
+- Normal REST/JSON handlers: no page redirects, no cookie-based frontend session wiring, no embedded frontend control payloads.
 
 ## Required behavior for code generation
 
@@ -29,6 +41,6 @@ alwaysApply: false
 
 - Duplicate utilities that overlap with SDK responsibilities.
 - Direct dependency on low-level client initialization in business layer.
-- Mixing multiple logging/metrics styles in one service.
+- Mixing multiple logging/metrics/error response styles in one service.
 - Imports are grouped and formatted by `gofmt`.
 - No dead code, commented-out blocks, or placeholder TODOs.

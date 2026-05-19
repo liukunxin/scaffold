@@ -33,6 +33,14 @@ go-infra-cli init myapp \
 
 > `.cursor/rules` 与 `AGENTS.md` 会始终随模板生成，不再由 feature 控制。
 
+## 基础能力（默认启用，非 feature）
+
+以下在模板中**默认接入**，无需也不应通过 `--features` 开关：
+
+- `pkg/base/log` — 启动时初始化
+- `pkg/base/trace` — 启动时初始化 + HTTP 中间件
+- `pkg/base/errors` — 业务层 `WrapError`，Controller 使用 `GinBase` 统一错误响应
+
 ## Feature 说明
 
 - `mysql`: 启用 MySQL 初始化（`features.mysql=true`）

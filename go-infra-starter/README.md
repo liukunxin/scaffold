@@ -57,6 +57,18 @@ go-infra-starter/
 - `user` 模块演示四层（`controller -> logic -> service -> dao`）
 - `llm` 模块演示三层（`controller -> service`，无 `logic`）
 
+## 基础能力（默认启用）
+
+以下能力**不通过 `--features` 开关**，项目启动时默认接入，生成代码应直接复用：
+
+| 能力 | SDK | 说明 |
+|------|-----|------|
+| 日志 | `pkg/base/log` | `bootstrap` 中 `observability.InitLog` |
+| 链路 | `pkg/base/trace` | `bootstrap` 中 `observability.InitTrace` + 路由中间件 |
+| 错误 | `pkg/base/errors` | 业务层 `WrapError`；Controller 继承 `GinBase.ErrorResponse` |
+
+示例：`user` 模块查询不存在用户时返回 `errors.WrapError(StatusNotFound, ...)`，由 Controller 统一输出 JSON。
+
 ## 配置约定说明
 
 `internal/infra/config/App` 遵循“优先复用 SDK 配置结构”的原则：
@@ -71,8 +83,13 @@ go-infra-starter/
 - **项目自定义字段（编排层）**
   - `app_name`: 服务名（用于 trace/metrics 默认命名）
   - `server.address`: HTTP 监听地址
-  - `features`: 运行期开关（`mysql` / `redis` / `metrics` / `pprof` / `http_client` / `traffic` / `llm`）
+  - `features`: 可选基础设施开关（`mysql` / `redis` / `metrics` / `pprof` / `http_client` / `traffic` / `llm`）；不含 log/trace/errors
   - `traffic`: 流控策略参数（默认使用限流控制器）
+
+数据与接口约定（详见 `.cursor/rules` 与 `AGENTS.md`）：
+
+- MySQL 表设计**不使用外键**，一致性由应用层保证。
+- 常规 JSON API **不负责**前端页面跳转、Cookie 写入等；SSE/OAuth 等场景除外。
 
 示例：
 
