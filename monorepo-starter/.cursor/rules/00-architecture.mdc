@@ -1,0 +1,29 @@
+---
+description: Enforce monorepo runtime/domain architecture boundaries
+alwaysApply: true
+---
+
+# Monorepo Architecture Rule
+
+- Keep dependency direction stable: `apps -> internal(runtime) -> domains(api/contracts)`.
+- Runtime (`internal`) is the only state center.
+- Domains are stateless plugins.
+- Apps are entry layers only.
+- Cross-module communication must go through Event contracts.
+- Do not bypass runtime with direct domain-to-domain calls.
+
+## Layer constraints
+
+- `apps/*`:
+  - allowed: transport adapters, auth/parsing, invoke runtime, response rendering.
+  - forbidden: domain business orchestration, direct vendor SDK/database business ops.
+- `internal/*`:
+  - allowed: session, event dispatcher, snapshot/replay, sequencer, ws protocol.
+  - forbidden: UI/business page logic, depending on `apps` implementations.
+- `domains/*`:
+  - allowed: business logic via event input/output contracts.
+  - forbidden: websocket/session store/redis/kafka wiring, runtime impl dependency.
+- `pkg|packages/*`:
+  - allowed: infrastructure adapters.
+  - forbidden: business logic and runtime/domain coupling.
+

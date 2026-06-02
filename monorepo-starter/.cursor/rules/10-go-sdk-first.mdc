@@ -1,0 +1,21 @@
+---
+description: Enforce go-infra SDK-first policy for technical capabilities
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# SDK-First Rule
+
+- Always search existing `github.com/liukunxin/go-infra` capabilities before adding new infra code.
+- Reuse SDK modules for logging, tracing, errors, metrics, http/grpc/ws client wrappers, mysql/redis/kafka where applicable.
+- Keep wrappers thin; put integrations in `apps/*/bootstrap` or `pkg|packages/*`.
+- Do not create parallel logging/tracing/error stacks.
+
+## Baseline requirements
+
+- Logs: use `pkg/base/log`.
+- Tracing: use `pkg/base/trace`.
+- Errors: use `pkg/base/errors`.
+
+If a capability is missing in SDK, add the minimal adapter and document why.
+

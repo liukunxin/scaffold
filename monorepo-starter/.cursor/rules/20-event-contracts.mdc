@@ -1,0 +1,33 @@
+---
+description: Enforce cross-module event envelope and evolution rules
+alwaysApply: true
+---
+
+# Event Contract Rule
+
+All cross-module communication must use the canonical event envelope:
+
+```json
+{
+  "eventId": "string",
+  "eventType": "string",
+  "sessionId": "string",
+  "seq": "int64",
+  "timestamp": "int64",
+  "payload": {}
+}
+```
+
+## Constraints
+
+- `eventType` must be stable and explicitly versioned by convention.
+- `seq` must be monotonic within one session.
+- `timestamp` uses unix milliseconds.
+- `payload` changes must be backward-compatible.
+- Ignore unknown payload fields for forward compatibility.
+
+## Prohibitions
+
+- Direct cross-module calls bypassing event router.
+- Domain implementation dependencies on runtime internals.
+

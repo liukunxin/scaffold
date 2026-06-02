@@ -1,0 +1,21 @@
+app_name: go-infra-monorepo-starter
+
+server:
+  address: ":8080"
+
+grpc:
+  address: ":9091"
+
+runtime:
+  default_ping_name: "go-infra"
+
+log:
+  level: 1
+  formatter: json
+  output: stdout
+  buffer_size: 1024
+
+trace:
+  service_name: go-infra-monorepo-starter
+  sample_ratio: 1
+
