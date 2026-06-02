@@ -3,6 +3,9 @@ app_name: go-infra-starter
 server:
   address: ":8080"
 
+grpc:
+  address: ":9091"
+
 log:
   level: 1
   formatter: json

@@ -16,6 +16,9 @@ go-infra-cli version
 # 最小项目（仅 log/trace/errors，不装 mysql/redis 等可选能力）
 go-infra-cli init myapp --module github.com/acme/myapp --output .
 
+# 运行场景（默认 http，可叠加 grpc/ws）
+go-infra-cli init myapp --module github.com/acme/myapp --scenes http,grpc,ws
+
 # 按需安装能力（与 add 相同：注入 bootstrap 初始化 wiring）
 go-infra-cli init myapp \
   --module github.com/acme/myapp \
@@ -50,6 +53,7 @@ go-infra-cli remove redis
 - `--template`: 模板目录；不传时自动查找 `go-infra-starter`
 - `--force`: 目标目录存在时覆盖
 - `--features`: 逗号分隔，**仅列出的能力会安装**；不传则一个都不装（仅基线能力）
+- `--scenes`: 逗号分隔运行场景，支持 `http,grpc,ws`；默认 `http`（`ws` 会自动保留 `http`）
 - `--skip-tidy`: 跳过 `go mod tidy`
 
 > `.cursor/rules` 与 `AGENTS.md` 会始终随模板生成。

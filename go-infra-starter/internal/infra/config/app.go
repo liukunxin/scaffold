@@ -14,6 +14,7 @@ import (
 type App struct {
 	AppName string       `yaml:"app_name" validate:"required"`
 	Server  ServerConfig `yaml:"server" validate:"required"`
+	GRPC    GRPCConfig   `yaml:"grpc"`
 
 	// 直接复用 go-infra 内置配置结构，避免脚手架重复定义。
 	Log     klog.Config        `yaml:"log"`
@@ -29,6 +30,10 @@ type ServerConfig struct {
 	Address string `yaml:"address" validate:"required"`
 }
 
+type GRPCConfig struct {
+	Address string `yaml:"address"`
+}
+
 type TrafficConfig struct {
 	RateLimitQPS   float64 `yaml:"rate_limit_qps"`
 	RateLimitBurst int     `yaml:"rate_limit_burst"`
@@ -40,6 +45,9 @@ func (a *App) Validate() error {
 	}
 	if a.Server.Address == "" {
 		return fmt.Errorf("server.address is required")
+	}
+	if a.GRPC.Address == "" {
+		a.GRPC.Address = ":9091"
 	}
 	return nil
 }

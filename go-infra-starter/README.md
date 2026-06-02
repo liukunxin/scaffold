@@ -12,6 +12,7 @@
 ```text
 go-infra-starter/
 ├─ cmd/http/main.go
+├─ cmd/grpc/main.go
 ├─ configs/
 ├─ internal/
 │  ├─ app/                          # 业务域（垂直切片）
@@ -28,9 +29,11 @@ go-infra-starter/
 │  │  │  └─ codes/
 │  │  ├─ demo/
 │  │  │  ├─ controller/
+│  │  │  ├─ grpc/
 │  │  │  ├─ service/
 │  │  │  ├─ dto/
 │  │  │  └─ vo/
+│  │  ├─ realtime/                  # WebSocket demo（/ws）
 │  │  └─ llm/                       # 仅 --features llm 时由 CLI 注入
 │  │     ├─ controller/
 │  │     ├─ service/
@@ -103,6 +106,8 @@ go-infra-starter/
 app_name: myapp
 server:
   address: ":8080"
+grpc:
+  address: ":9091"
 
 log:
   level: 1
@@ -142,6 +147,7 @@ llm:
 ```bash
 go mod tidy
 go run ./cmd/http
+go run ./cmd/grpc
 ```
 
 模板默认包含基础 `.gitignore`（构建产物、日志、环境文件、常见 IDE/OS 噪音文件）。
@@ -152,11 +158,18 @@ go run ./cmd/http
 - `POST /api/v1/users`
 - `GET /api/v1/users/:id`
 - `GET /api/v1/demo/ping?name=go-infra`
+- `GET /ws`（WebSocket demo）
 
 三层示例：
 
 ```bash
 curl "http://127.0.0.1:8080/api/v1/demo/ping?name=go-infra"
+```
+
+gRPC 示例（无 proto 文件，使用内置消息类型）：
+
+```bash
+grpcurl -plaintext 127.0.0.1:9091 demo.DemoService/Ping
 ```
 
 启用 `--features llm` 后额外提供 `POST /api/v1/llm/ping`（需配置 `llm.providers`），例如：

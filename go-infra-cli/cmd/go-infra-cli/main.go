@@ -65,6 +65,7 @@ func printUsage() {
 	fmt.Println("  --force         overwrite existing target directory")
 	fmt.Println("  --features      comma-separated install list, e.g. mysql,redis,metrics,pprof,http-client,traffic,llm")
 	fmt.Println("                  (default: install none; only baseline log/trace/errors)")
+	fmt.Println("  --scenes        comma-separated runtime scenes, e.g. http,grpc,ws (default: http)")
 	fmt.Println("  --skip-tidy     skip running go mod tidy")
 }
 
@@ -76,6 +77,7 @@ func runInit(args []string) error {
 	template := fs.String("template", "", "template directory path")
 	force := fs.Bool("force", false, "overwrite existing directory")
 	features := fs.String("features", "", "comma-separated install list: mysql,redis,metrics,pprof,http-client,traffic,llm")
+	scenes := fs.String("scenes", "", "comma-separated runtime scenes: http,grpc,ws")
 	skipTidy := fs.Bool("skip-tidy", false, "skip go mod tidy")
 
 	var projectName string
@@ -111,6 +113,10 @@ func runInit(args []string) error {
 	if err != nil {
 		return err
 	}
+	sceneFlags, err := parseInitScenesArg(*scenes)
+	if err != nil {
+		return err
+	}
 
 	templateDir, err := resolveTemplateDir(*template)
 	if err != nil {
@@ -136,6 +142,9 @@ func runInit(args []string) error {
 	if err = syncAllConfigFeatures(targetDir, configFlags); err != nil {
 		return err
 	}
+	if err = applySceneSelection(targetDir, sceneFlags); err != nil {
+		return err
+	}
 
 	if err = replaceStarterStrings(targetDir, *moduleName); err != nil {
 		return err
@@ -154,7 +163,11 @@ func runInit(args []string) error {
 	}
 
 	fmt.Printf("project generated: %s\n", targetDir)
-	fmt.Printf("next steps:\n  cd %s\n  go run ./cmd/http\n", targetDir)
+	fmt.Printf("next steps:\n  cd %s\n", targetDir)
+	fmt.Println("  go run ./cmd/http")
+	if sceneFlags["grpc"] {
+		fmt.Println("  go run ./cmd/grpc")
+	}
 	return nil
 }
 
@@ -300,6 +313,87 @@ func applyInitMySQLDSN(targetDir string, withMySQL bool) error {
 	}
 	content := replaceLineByPrefix(string(data), "  dsn:", `  dsn: ""`)
 	return os.WriteFile(configPath, []byte(content), 0o644)
+}
+
+func parseInitScenesArg(raw string) (map[string]bool, error) {
+	// Default scene is always HTTP.
+	scenes := map[string]bool{
+		"http": true,
+		"grpc": false,
+		"ws":   false,
+	}
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return scenes, nil
+	}
+	for _, part := range strings.Split(raw, ",") {
+		scene := strings.TrimSpace(strings.ToLower(part))
+		if scene == "" {
+			continue
+		}
+		switch scene {
+		case "http", "grpc", "ws":
+			scenes[scene] = true
+		default:
+			return nil, fmt.Errorf("unsupported scene %q: only http,grpc,ws are allowed", scene)
+		}
+	}
+	// ws runs on http upgrade, so http must exist.
+	if scenes["ws"] {
+		scenes["http"] = true
+	}
+	return scenes, nil
+}
+
+func applySceneSelection(projectDir string, scenes map[string]bool) error {
+	if !scenes["ws"] {
+		_ = os.RemoveAll(filepath.Join(projectDir, "internal", "app", "realtime"))
+	}
+
+	if scenes["grpc"] {
+		return keepSceneMarkers(filepath.Join(projectDir, "internal", "route", "init.go"), "SCENE_WS", scenes["ws"])
+	}
+
+	// grpc scene disabled: remove grpc demo command and bootstrap wiring.
+	_ = os.RemoveAll(filepath.Join(projectDir, "cmd", "grpc"))
+	_ = os.Remove(filepath.Join(projectDir, "internal", "bootstrap", "grpc.go"))
+	_ = os.RemoveAll(filepath.Join(projectDir, "internal", "app", "demo", "grpc"))
+
+	return keepSceneMarkers(filepath.Join(projectDir, "internal", "route", "init.go"), "SCENE_WS", scenes["ws"])
+}
+
+func keepSceneMarkers(filePath, sceneKey string, keep bool) error {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+	content := string(data)
+	startMarker := "// " + sceneKey + "_START"
+	endMarker := "// " + sceneKey + "_END"
+
+	lines := strings.Split(content, "\n")
+	out := make([]string, 0, len(lines))
+	inBlock := false
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == startMarker {
+			inBlock = true
+			if keep {
+				continue
+			}
+			continue
+		}
+		if trimmed == endMarker {
+			inBlock = false
+			continue
+		}
+		if inBlock && !keep {
+			continue
+		}
+		out = append(out, line)
+	}
+
+	return os.WriteFile(filePath, []byte(strings.Join(out, "\n")), 0o644)
 }
 
 func runGoModTidy(targetDir string) error {

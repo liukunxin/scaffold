@@ -6,6 +6,7 @@ require (
 	github.com/gin-gonic/gin v1.11.0
 	github.com/liukunxin/go-infra v0.0.0-20260514022320-81fbb21ba2d5
 	golang.org/x/time v0.12.0
+	google.golang.org/grpc v1.74.2
 )
 
 require (
