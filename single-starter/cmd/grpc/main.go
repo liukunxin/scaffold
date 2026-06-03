@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"go-infra-starter/internal/bootstrap"
+	"single-starter/internal/bootstrap"
 )
 
 func main() {
@@ -17,4 +17,3 @@ func main() {
 		log.Fatalf("grpc server run failed: %v", err)
 	}
 }
-

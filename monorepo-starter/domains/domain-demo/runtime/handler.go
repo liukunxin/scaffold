@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"go-infra-monorepo-starter/domains/domain-demo/api"
-	"go-infra-monorepo-starter/internal/event"
+	"monorepo-starter/domains/domain-demo/api"
+	"monorepo-starter/internal/event"
 )
 
 func NewHandler(contract api.Contract) func(ctx context.Context, evt event.Envelope) (event.Envelope, error) {

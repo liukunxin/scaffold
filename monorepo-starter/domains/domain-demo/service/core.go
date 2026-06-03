@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"go-infra-monorepo-starter/domains/domain-demo/api"
+	"monorepo-starter/domains/domain-demo/api"
 )
 
 type Core struct{}

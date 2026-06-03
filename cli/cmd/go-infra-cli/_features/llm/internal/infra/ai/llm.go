@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"go-infra-starter/internal/infra/config"
+	"single-starter/internal/infra/config"
 
 	"github.com/liukunxin/go-infra/pkg/infra/llm"
 )

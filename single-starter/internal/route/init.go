@@ -5,15 +5,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/liukunxin/go-infra/pkg/biz/middlewares"
-	democontroller "go-infra-starter/internal/app/demo/controller"
-	demoservice "go-infra-starter/internal/app/demo/service"
+	democontroller "single-starter/internal/app/demo/controller"
+	demoservice "single-starter/internal/app/demo/service"
 	// SCENE_WS_START
-	realtime "go-infra-starter/internal/app/realtime"
+	realtime "single-starter/internal/app/realtime"
 	// SCENE_WS_END
-	"go-infra-starter/internal/app/user/controller"
-	"go-infra-starter/internal/app/user/dao"
-	"go-infra-starter/internal/app/user/logic"
-	"go-infra-starter/internal/app/user/service"
+	"single-starter/internal/app/user/controller"
+	"single-starter/internal/app/user/dao"
+	"single-starter/internal/app/user/logic"
+	"single-starter/internal/app/user/service"
 )
 
 func Setup(router *gin.Engine) {

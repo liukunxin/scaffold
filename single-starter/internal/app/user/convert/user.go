@@ -1,10 +1,10 @@
 package convert
 
 import (
-	"go-infra-starter/internal/app/user/dto"
-	"go-infra-starter/internal/app/user/model"
-	"go-infra-starter/internal/app/user/ro"
-	"go-infra-starter/internal/app/user/vo"
+	"single-starter/internal/app/user/dto"
+	"single-starter/internal/app/user/model"
+	"single-starter/internal/app/user/ro"
+	"single-starter/internal/app/user/vo"
 )
 
 func CreateReqToDTO(req *ro.CreateUserReq) *dto.CreateUserInput {

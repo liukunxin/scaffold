@@ -3,10 +3,10 @@ package logic
 import (
 	"context"
 
-	"go-infra-starter/internal/app/user/convert"
-	"go-infra-starter/internal/app/user/dto"
-	"go-infra-starter/internal/app/user/service"
-	"go-infra-starter/internal/app/user/vo"
+	"single-starter/internal/app/user/convert"
+	"single-starter/internal/app/user/dto"
+	"single-starter/internal/app/user/service"
+	"single-starter/internal/app/user/vo"
 )
 
 type UserLogic interface {

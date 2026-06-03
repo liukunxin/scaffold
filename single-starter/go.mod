@@ -1,4 +1,4 @@
-module go-infra-starter
+module single-starter
 
 go 1.25
 

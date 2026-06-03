@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/liukunxin/go-infra/pkg/biz/middlewares"
-	"go-infra-monorepo-starter/apps/gateway/internal/handler"
-	wstransport "go-infra-monorepo-starter/apps/gateway/transport/ws"
+	"monorepo-starter/apps/gateway/internal/handler"
+	wstransport "monorepo-starter/apps/gateway/transport/ws"
 )
 
 type Server struct {

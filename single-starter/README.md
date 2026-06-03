@@ -1,4 +1,4 @@
-# go-infra-starter
+# single-starter
 
 一个可单独提取的新项目骨架，目标是：
 
@@ -10,7 +10,7 @@
 ## 目录
 
 ```text
-go-infra-starter/
+single-starter/
 ├─ cmd/http/main.go
 ├─ cmd/grpc/main.go
 ├─ configs/

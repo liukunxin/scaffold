@@ -3,9 +3,9 @@ package controller
 import (
 	"github.com/gin-gonic/gin"
 	kcontroller "github.com/liukunxin/go-infra/pkg/biz/controller"
-	"go-infra-starter/internal/app/user/convert"
-	"go-infra-starter/internal/app/user/logic"
-	"go-infra-starter/internal/app/user/ro"
+	"single-starter/internal/app/user/convert"
+	"single-starter/internal/app/user/logic"
+	"single-starter/internal/app/user/ro"
 )
 
 type UserController interface {

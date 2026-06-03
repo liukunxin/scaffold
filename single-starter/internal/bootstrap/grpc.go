@@ -8,10 +8,10 @@ import (
 	"github.com/liukunxin/go-infra/pkg/base/log"
 	"github.com/liukunxin/go-infra/pkg/base/trace"
 	infragrpc "github.com/liukunxin/go-infra/pkg/infra/grpc"
-	demogrpc "go-infra-starter/internal/app/demo/grpc"
-	demoservice "go-infra-starter/internal/app/demo/service"
-	"go-infra-starter/internal/infra/config"
 	ggrpc "google.golang.org/grpc"
+	demogrpc "single-starter/internal/app/demo/grpc"
+	demoservice "single-starter/internal/app/demo/service"
+	"single-starter/internal/infra/config"
 )
 
 type GRPCApp struct {
@@ -70,4 +70,3 @@ func (a *GRPCApp) Close() {
 	trace.Flush()
 	log.Close()
 }
-

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"go-infra-starter/internal/app/demo/dto"
-	"go-infra-starter/internal/app/demo/vo"
+	"single-starter/internal/app/demo/dto"
+	"single-starter/internal/app/demo/vo"
 )
 
 type DemoService interface {

@@ -7,9 +7,9 @@ import (
 	"github.com/liukunxin/go-infra/pkg/base/env"
 	"github.com/liukunxin/go-infra/pkg/base/log"
 	"github.com/liukunxin/go-infra/pkg/base/trace"
-	"go-infra-starter/internal/infra/ai"
-	"go-infra-starter/internal/infra/config"
-	"go-infra-starter/internal/route"
+	"single-starter/internal/infra/ai"
+	"single-starter/internal/infra/config"
+	"single-starter/internal/route"
 	// FEATURE_IMPORTS_START
 	// FEATURE_IMPORTS_END
 )

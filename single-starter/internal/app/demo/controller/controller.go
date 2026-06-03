@@ -3,8 +3,8 @@ package controller
 import (
 	"github.com/gin-gonic/gin"
 	kcontroller "github.com/liukunxin/go-infra/pkg/biz/controller"
-	"go-infra-starter/internal/app/demo/dto"
-	"go-infra-starter/internal/app/demo/service"
+	"single-starter/internal/app/demo/dto"
+	"single-starter/internal/app/demo/service"
 )
 
 type DemoController interface {

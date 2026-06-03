@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	"go-infra-starter/internal/app/llm/dto"
-	"go-infra-starter/internal/infra/ai"
+	"single-starter/internal/app/llm/dto"
+	"single-starter/internal/infra/ai"
 )
 
 type LLMService interface {

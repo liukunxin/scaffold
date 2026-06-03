@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"go-infra-monorepo-starter/internal/event"
+	"monorepo-starter/internal/event"
 )
 
 type Router struct {

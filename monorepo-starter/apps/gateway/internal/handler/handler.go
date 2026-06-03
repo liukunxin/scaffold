@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"go-infra-monorepo-starter/apps/gateway/internal/model"
-	"go-infra-monorepo-starter/apps/gateway/internal/service"
+	"monorepo-starter/apps/gateway/internal/model"
+	"monorepo-starter/apps/gateway/internal/service"
 )
 
 type RuntimeHandler struct {

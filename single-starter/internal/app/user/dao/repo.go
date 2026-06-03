@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	kerr "github.com/liukunxin/go-infra/pkg/base/errors"
-	"go-infra-starter/internal/app/user/codes"
-	"go-infra-starter/internal/app/user/model"
+	"single-starter/internal/app/user/codes"
+	"single-starter/internal/app/user/model"
 )
 
 type UserRepo interface {

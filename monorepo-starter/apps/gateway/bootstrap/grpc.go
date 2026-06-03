@@ -8,7 +8,7 @@ import (
 	"github.com/liukunxin/go-infra/pkg/base/log"
 	"github.com/liukunxin/go-infra/pkg/base/trace"
 	infragrpc "github.com/liukunxin/go-infra/pkg/infra/grpc"
-	grpctransport "go-infra-monorepo-starter/apps/gateway/transport/grpc"
+	grpctransport "monorepo-starter/apps/gateway/transport/grpc"
 )
 
 type GRPCApp struct {

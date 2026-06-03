@@ -301,7 +301,11 @@ func replaceStarterStrings(targetDir, moduleName string) error {
 		if err != nil {
 			return err
 		}
-		content := strings.ReplaceAll(string(data), "go-infra-starter", moduleName)
+		content := string(data)
+		content = strings.ReplaceAll(content, "single-starter", moduleName)
+		content = strings.ReplaceAll(content, "monorepo-starter", moduleName)
+		// Legacy placeholders still replaced for historical templates.
+		content = strings.ReplaceAll(content, "go-infra-starter", moduleName)
 		content = strings.ReplaceAll(content, "go-infra-monorepo-starter", moduleName)
 		return os.WriteFile(path, []byte(content), 0o644)
 	})

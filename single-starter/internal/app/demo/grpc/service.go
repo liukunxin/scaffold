@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	demodto "go-infra-starter/internal/app/demo/dto"
-	demoservice "go-infra-starter/internal/app/demo/service"
-	"go-infra-starter/internal/app/demo/vo"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	demodto "single-starter/internal/app/demo/dto"
+	demoservice "single-starter/internal/app/demo/service"
+	"single-starter/internal/app/demo/vo"
 )
 
 const (
@@ -91,4 +91,3 @@ func (c *client) Ping(ctx context.Context) (*vo.PingResp, error) {
 	}
 	return &vo.PingResp{Message: out.Value}, nil
 }
-

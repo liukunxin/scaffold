@@ -3,7 +3,7 @@ package replay
 import (
 	"context"
 
-	"go-infra-monorepo-starter/internal/event"
+	"monorepo-starter/internal/event"
 )
 
 // Runner replays an ordered event stream through runtime.

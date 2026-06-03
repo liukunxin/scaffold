@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/liukunxin/go-infra/pkg/base/uuid"
-	"go-infra-starter/internal/app/user/dao"
-	"go-infra-starter/internal/app/user/dto"
-	"go-infra-starter/internal/app/user/model"
+	"single-starter/internal/app/user/dao"
+	"single-starter/internal/app/user/dto"
+	"single-starter/internal/app/user/model"
 )
 
 type UserService interface {

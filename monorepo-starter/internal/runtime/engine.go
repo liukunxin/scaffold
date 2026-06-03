@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"go-infra-monorepo-starter/internal/event"
+	"monorepo-starter/internal/event"
 )
 
 type Engine struct {

@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"go-infra-monorepo-starter/apps/gateway/bootstrap"
+	"monorepo-starter/apps/gateway/bootstrap"
 )
 
 func main() {

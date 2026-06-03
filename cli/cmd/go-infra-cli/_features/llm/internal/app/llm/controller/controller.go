@@ -5,10 +5,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	kcontroller "github.com/liukunxin/go-infra/pkg/biz/controller"
-	"go-infra-starter/internal/app/llm/dto"
-	"go-infra-starter/internal/app/llm/ro"
-	"go-infra-starter/internal/app/llm/service"
-	"go-infra-starter/internal/app/llm/vo"
+	"single-starter/internal/app/llm/dto"
+	"single-starter/internal/app/llm/ro"
+	"single-starter/internal/app/llm/service"
+	"single-starter/internal/app/llm/vo"
 )
 
 type LLMController interface {

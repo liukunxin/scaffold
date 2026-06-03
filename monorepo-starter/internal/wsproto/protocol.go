@@ -1,6 +1,6 @@
 package wsproto
 
-import "go-infra-monorepo-starter/internal/event"
+import "monorepo-starter/internal/event"
 
 // Message is websocket transport protocol payload.
 type Message struct {

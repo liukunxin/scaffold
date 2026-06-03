@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"go-infra-monorepo-starter/apps/gateway/internal/model"
-	"go-infra-monorepo-starter/apps/gateway/internal/repository"
-	demoapi "go-infra-monorepo-starter/domains/domain-demo/api"
-	runtimecore "go-infra-monorepo-starter/internal/runtime"
+	"monorepo-starter/apps/gateway/internal/model"
+	"monorepo-starter/apps/gateway/internal/repository"
+	demoapi "monorepo-starter/domains/domain-demo/api"
+	runtimecore "monorepo-starter/internal/runtime"
 )
 
 // RuntimeService orchestrates app input -> runtime event -> app output.

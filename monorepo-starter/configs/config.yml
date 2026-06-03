@@ -1,4 +1,4 @@
-app_name: go-infra-monorepo-starter
+app_name: monorepo-starter
 
 server:
   address: ":8080"
@@ -16,6 +16,6 @@ log:
   buffer_size: 1024
 
 trace:
-  service_name: go-infra-monorepo-starter
+  service_name: monorepo-starter
   sample_ratio: 1
 

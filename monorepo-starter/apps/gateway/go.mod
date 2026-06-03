@@ -1,11 +1,11 @@
-module go-infra-monorepo-starter/apps/gateway
+module monorepo-starter/apps/gateway
 
 go 1.25
 
 require (
 	github.com/gin-gonic/gin v1.11.0
 	github.com/liukunxin/go-infra v0.0.0-20260602125120-dd0524c893c6
-	go-infra-monorepo-starter v0.0.0
+	monorepo-starter v0.0.0
 	google.golang.org/grpc v1.74.2
 	google.golang.org/protobuf v1.36.9
 )
@@ -59,6 +59,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace go-infra-monorepo-starter => ../..
+replace monorepo-starter => ../..
 
 exclude google.golang.org/genproto v0.0.0-20220503193339-ba3ae3f07e29
