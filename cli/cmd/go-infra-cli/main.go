@@ -41,6 +41,21 @@ func main() {
 			fmt.Fprintf(os.Stderr, "remove failed: %v\n", err)
 			os.Exit(1)
 		}
+	case "keygen":
+		if err := runKeygen(os.Args[2:]); err != nil {
+			fmt.Fprintf(os.Stderr, "keygen failed: %v\n", err)
+			os.Exit(1)
+		}
+	case "encrypt":
+		if err := runEncrypt(os.Args[2:]); err != nil {
+			fmt.Fprintf(os.Stderr, "encrypt failed: %v\n", err)
+			os.Exit(1)
+		}
+	case "decrypt":
+		if err := runDecrypt(os.Args[2:]); err != nil {
+			fmt.Fprintf(os.Stderr, "decrypt failed: %v\n", err)
+			os.Exit(1)
+		}
 	case "version":
 		fmt.Println(version)
 	default:
@@ -56,12 +71,16 @@ func printUsage() {
 	fmt.Println("  go-infra-cli remove <features> [flags]")
 	fmt.Println("  go-infra-cli mono add app <name> [--dir <project-root>]")
 	fmt.Println("  go-infra-cli mono add domain <name> [--dir <project-root>]")
+	fmt.Println("  go-infra-cli keygen")
+	fmt.Println("  go-infra-cli encrypt --value=<plaintext> [--key=<hex>|--key-env=<ENV>]")
+	fmt.Println("  go-infra-cli decrypt --value=<ENC(...)> [--key=<hex>|--key-env=<ENV>]")
 	fmt.Println("  go-infra-cli version")
 	fmt.Println()
 	fmt.Println("common flags:")
 	fmt.Println("  init: --layout single|monorepo --module --app-name --features --scenes --output --force --skip-tidy")
 	fmt.Println("  add/remove: --dir")
 	fmt.Println("  features: mysql,redis,metrics,pprof,http-client,traffic (llm via init --features llm)")
+	fmt.Println("  encrypt/decrypt: --key (hex) or --key-env (default: CONFIG_ENCRYPT_KEY)")
 }
 
 func runInit(args []string) error {
