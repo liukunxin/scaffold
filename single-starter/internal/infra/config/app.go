@@ -8,7 +8,7 @@ import (
 	"github.com/liukunxin/go-infra/pkg/infra/http_client"
 	"github.com/liukunxin/go-infra/pkg/infra/llm"
 	"github.com/liukunxin/go-infra/pkg/infra/mysql"
-	redis "github.com/liukunxin/go-infra/pkg/infra/redis/v8"
+	redis "github.com/liukunxin/go-infra/pkg/infra/redis"
 )
 
 type App struct {

@@ -31,17 +31,17 @@ var configFeatureSpecs = map[string]featureSpec{
 		},
 	},
 	"redis": {
-		Imports: []string{`redisv8 "github.com/liukunxin/go-infra/pkg/infra/redis/v8"`},
+		Imports: []string{`iredis "github.com/liukunxin/go-infra/pkg/infra/redis"`},
 		Init: []string{
 			`if len(cfg.Redis.Addresses) > 0 {`,
-			`	if err = redisv8.Init(&cfg.Redis); err != nil {`,
+			`	if err = iredis.Init(&cfg.Redis); err != nil {`,
 			`		return nil, err`,
 			`	}`,
 			`}`,
 		},
 		Close: []string{
 			`if len(a.cfg.Redis.Addresses) > 0 {`,
-			`	_ = redisv8.GetClient().Close()`,
+			`	_ = iredis.GetClient().Close()`,
 			`}`,
 		},
 	},

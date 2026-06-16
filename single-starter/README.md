@@ -83,7 +83,7 @@ single-starter/
   - `log`: `pkg/base/log.Config`
   - `trace`: `pkg/base/trace.Config`
   - `mysql`: `pkg/infra/mysql.Config`
-  - `redis`: `pkg/infra/redis/v8.Config`
+  - `redis`: `pkg/infra/redis.Config`
   - `http_client`: `pkg/infra/http_client.Config`
   - `llm`: `pkg/infra/llm.Config`
 - **项目自定义字段（编排层）**
