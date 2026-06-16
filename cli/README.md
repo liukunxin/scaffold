@@ -78,6 +78,61 @@ go-infra-cli mono add domain domain-ocr --dir ./collab-platform
 - 命名约束：`^[a-z][a-z0-9-]*$`
 - 仅做骨架编排，基础能力统一复用 `github.com/liukunxin/go-infra`
 
+## 配置加密
+
+提供密钥生成、加密、解密三个命令，用于管理 YAML 配置中的敏感值。
+
+### 生成密钥
+
+```bash
+go-infra-cli keygen
+# 输出:
+#   Key (hex): 3f8b1a...（64字符）
+#
+#   Set as environment variable:
+#     export CONFIG_ENCRYPT_KEY=3f8b1a...
+```
+
+将输出的密钥存入环境变量（推荐通过 K8s Secret 或 CI/CD Secret 注入）。
+
+### 加密配置值
+
+```bash
+# 从环境变量读取密钥（默认 CONFIG_ENCRYPT_KEY）
+go-infra-cli encrypt --value="MyP@ssw0rd"
+
+# 指定环境变量名
+go-infra-cli encrypt --key-env=MY_KEY --value="secret"
+
+# 直接传 hex 密钥（调试用）
+go-infra-cli encrypt --key=3f8b1a... --value="secret"
+```
+
+输出 `ENC(...)` 格式的密文，粘贴到 YAML 配置中即可：
+
+```yaml
+mysql:
+  password: "ENC(xxxxxxx)"
+```
+
+### 解密验证
+
+```bash
+go-infra-cli decrypt --value="ENC(xxxxxxx)"
+```
+
+### 运行时自动解密
+
+应用侧使用 go-infra SDK：
+
+```go
+cfg := config.MustLoad[App](
+    config.WithDecrypt(config.AESKeyFromEnv("CONFIG_ENCRYPT_KEY")),
+)
+```
+
+不传 `WithDecrypt` 时 `ENC(...)` 被当作普通字符串，对现有项目零影响。
+
 ## 构建版本
 
 ```bash
