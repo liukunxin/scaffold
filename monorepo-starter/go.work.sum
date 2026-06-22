@@ -1,7 +1,0 @@
-github.com/golang/protobuf v1.5.2 h1:ROPKBNFfQgOUMifHyP+KYbvpjbdoFNs+aK7DXlji0Tw=
-github.com/liukunxin/go-infra v0.0.0-20260514022320-81fbb21ba2d5 h1:1NGD5FzUjSDv9gPqpqVrUFQqNaeezTpDste1TSL4ldg=
-github.com/liukunxin/go-infra v0.0.0-20260514022320-81fbb21ba2d5/go.mod h1:gVyoEnVLJ7+2QL8CGcFmzd1H2H16GAE3msqTkumfm38=
-github.com/pelletier/go-toml v1.9.3 h1:zeC5b1GviRUyKYd6OJPvBU/mcVDVoL1OhT17FCt5dSQ=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20250528174236-200df99c418a h1:v2PbRU4K3llS09c7zodFpNePeamkAwG3mPrAery9VeE=
-google.golang.org/grpc v1.48.0 h1:rQOsyJ/8+ufEDJd/Gdsz7HG220Mh9HAhFHRGnIjda0w=
-google.golang.org/grpc v1.48.0/go.mod h1:vN9eftEi1UMyUsIF80+uQXhHjbXYbm0uXoFCACuMGWk=

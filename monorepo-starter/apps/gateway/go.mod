@@ -4,10 +4,10 @@ go 1.25
 
 require (
 	github.com/gin-gonic/gin v1.11.0
-	github.com/liukunxin/go-infra v0.0.0-20260602125120-dd0524c893c6
-	monorepo-starter v0.0.0
+	github.com/liukunxin/go-infra v0.0.0-20260616090631-de76158c1119
 	google.golang.org/grpc v1.74.2
 	google.golang.org/protobuf v1.36.9
+	monorepo-starter v0.0.0
 )
 
 require (

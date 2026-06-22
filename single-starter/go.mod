@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/gin-gonic/gin v1.11.0
-	github.com/liukunxin/go-infra v0.0.0-20260602125120-dd0524c893c6
+	github.com/liukunxin/go-infra v0.0.0-20260616090631-de76158c1119
 	google.golang.org/grpc v1.74.2
 	google.golang.org/protobuf v1.36.9
 )
@@ -26,7 +26,6 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.27.0 // indirect
-	github.com/redis/go-redis/v9 v9.9.0 // indirect
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
@@ -43,6 +42,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.54.0 // indirect
+	github.com/redis/go-redis/v9 v9.9.0 // indirect
 	github.com/sony/sonyflake v1.3.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
