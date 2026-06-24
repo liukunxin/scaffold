@@ -64,6 +64,8 @@ Before adding a new package or utility:
 2. Use the SDK package unless there is a clear gap.
 3. If there is a gap, document the reason and add a minimal wrapper in `internal/infra`.
 
+> go-infra SDK 完整包清单与用法速查见 `.cursor/rules/11-go-infra-api.mdc`（编写 Go 文件时自动注入）。
+
 ## Delivery Checklist
 
 - Reused SDK package where applicable (especially log / errors).

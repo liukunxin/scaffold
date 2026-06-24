@@ -1,0 +1,71 @@
+---
+description: >-
+  go-infra SDK 包速查与关键用法。编写 Go 代码时注入，
+  帮助快速定位已有 SDK 入口，避免重复造轮子或扫描 SDK 源码。
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# go-infra SDK 速查
+
+> 完整文档见 `go-infra` 仓库 `.cursor/rules/go-infra-sdk.mdc`
+
+## 包位置约定（monorepo）
+
+- 基础设施初始化：`apps/*/bootstrap/` 或 `packages/*/`
+- SDK 适配器：`apps/*/bootstrap/` 中初始化，通过构造参数或全局入口向上传递
+- 业务逻辑：`domains/*`，只调用接口，不直接 import 基础设施包
+
+## 常用包速查
+
+| 包 | 运行时入口 |
+|---|---|
+| `pkg/base/log` | `log.WithContext(ctx).Info/Warn/Errorf(...)` |
+| `pkg/base/errors` | `kerr.WrapError(kerr.StatusXxx, code, err)` |
+| `pkg/infra/redis` | `iredis.GetClient()` → `*redis.Client` |
+| `pkg/infra/mysql` | `mysql.GetClient()` → `*gorm.DB` |
+| `pkg/infra/http_client` | `httpclient.GetHTTPClient()` / `GetTransport()` |
+| `pkg/infra/websocket` | `websocket.NewHub(cfg)` + `Hub.Run()` |
+| `pkg/infra/kafka` | `kafka.NewProducer/Consumer(cfg)` |
+| `pkg/infra/llm` | `llm.New(llm.WithProvider(p))` |
+| `pkg/biz/controller` | embed `kcontroller.GinBase` |
+| `pkg/biz/middlewares` | `bizmw.GinTraceMiddleware()` / `HttpLogRecord()` |
+| `pkg/biz/collab` | 定序/幂等/回放/订阅引擎（实时协作） |
+
+## 关键用法速查
+
+```go
+// ── 日志 ──
+log.WithContext(ctx).Infof("session=%s event=%s", sid, et)
+
+// ── 错误 ──
+kerr.WrapError(kerr.StatusInternalServerError, codes.CollabConflict, err)
+// App transport 层统一响应：
+c.ErrorResponse(ginCtx, err)
+c.SuccessResponse(ginCtx, data)
+
+// ── HTTP 连接池 ──
+// 短请求：
+body, status, err := httpclient.GetHTTPClient().Get(ctx, url, headers)
+// 流式/SSE：
+cl := &http.Client{Transport: httpclient.GetTransport(), Timeout: 0}
+
+// ── LLM 流式 ──
+p, _ := llm.NewOpenAICompatibleProvider("gw", llm.OpenAICompatibleConfig{...})
+client, _ := llm.New(llm.WithProvider(p))
+ch, _ := client.GenerateStream(ctx, llm.GenerateRequest{Messages: msgs})
+// ⚠️ GenerateStream 仅文本 delta，tool_calls 需自行解析 SSE
+
+// ── 配置加密 ──
+// go-infra-cli keygen / encrypt / decrypt
+// kconfig.Load[App](kconfig.WithDecrypt(kconfig.AESKeyFromEnv("CONFIG_ENCRYPT_KEY")))
+```
+
+## 禁止事项
+
+- Domains 中不得直接 import `pkg/infra/*`（通过接口或事件解耦）
+- 不得在业务代码中 `&http.Client{}`（绕过连接池）
+- 不得 `fmt.Println` / 自建 zap
+- 不得手写 JSON 错误体（用 `ErrorResponse`）
+- MySQL 禁止 `FOREIGN KEY` 约束
+- 禁止 domain-to-domain 直接调用（必须经由 Event 合约）

@@ -523,7 +523,7 @@ func leadingSpace(s string) string {
 func isTextTemplateFile(path string) bool {
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
-	case ".go", ".mod", ".sum", ".yml", ".yaml", ".md", ".txt", ".json":
+	case ".go", ".mod", ".sum", ".yml", ".yaml", ".md", ".mdc", ".txt", ".json":
 		return true
 	default:
 		return false

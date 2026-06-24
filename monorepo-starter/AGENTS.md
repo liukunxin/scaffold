@@ -9,6 +9,8 @@ This project uses a monorepo + event-driven + runtime-core architecture.
 3. Apps are transport entry layers only.
 4. Reuse `github.com/liukunxin/go-infra` for shared infra capabilities whenever available.
 
+> go-infra SDK 完整包清单与用法速查见 `.cursor/rules/11-go-infra-api.mdc`（编写 Go 文件时自动注入）。
+
 ## Layer Boundaries
 
 - `apps/*`: HTTP/WebSocket/gRPC entry, request parsing, invoking runtime, response rendering.

@@ -1,0 +1,76 @@
+---
+description: >-
+  go-infra SDK 包速查与关键用法。编写 Go 代码时注入，
+  帮助快速定位已有 SDK 入口，避免重复造轮子或扫描 SDK 源码。
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# go-infra SDK 速查
+
+> 完整文档见 `go-infra` 仓库 `.cursor/rules/go-infra-sdk.mdc`
+
+## 已初始化包（bootstrap/app.go）
+
+| 包 | 运行时入口 |
+|---|---|
+| `pkg/base/log` | `log.WithContext(ctx).Info/Warn/Errorf(...)` |
+| `pkg/base/trace` | 由中间件自动注入，无需业务层调用 |
+| `pkg/base/errors` | `kerr.WrapError(kerr.StatusXxx, codes.ErrXxx, err)` |
+| `pkg/infra/redis` | `iredis.GetClient()` → `*redis.Client`（go-redis/v9） |
+| `pkg/infra/mysql` | `mysql.GetClient()` → `*gorm.DB` |
+| `pkg/infra/http_client` | `httpclient.GetHTTPClient()` / `httpclient.GetTransport()` |
+| `pkg/infra/metrics` | 自动注册 `/metrics`，无需业务调用 |
+| `pkg/biz/controller` | embed `kcontroller.GinBase` → `SuccessResponse/ErrorResponse` |
+| `pkg/biz/middlewares` | `bizmw.GinTraceMiddleware()` / `bizmw.HttpLogRecord()` |
+
+## 可按需引入的包
+
+`llm` · `grpc` · `websocket` · `kafka` · `milvus` · `es` · `objstore` · `apollo`
+`biz/login` · `biz/account` · `biz/pay` · `biz/collab` · `biz/sse`
+
+## 关键用法速查
+
+```go
+// ── 日志 ──
+log.WithContext(ctx).Infof("uid=%d action=%s", uid, action)
+
+// ── 错误 ──
+kerr.WrapError(kerr.StatusNotFound, codes.UserNotFound, fmt.Errorf("user %s", id))
+// Controller 统一响应（kerr 自动映射 HTTP status）：
+c.ErrorResponse(ctx, err)   // {"code":40401,"msg":"..."}
+c.SuccessResponse(ctx, data)// {"code":0,"msg":"ok","data":{...}}
+
+// ── Redis 原子配额（INCR→超限DECR，首次写入设TTL）──
+n, _ := iredis.GetClient().Incr(ctx, key).Result()
+if int(n) > limit { iredis.GetClient().Decr(ctx, key); return errQuota }
+if n == 1 { iredis.GetClient().Expire(ctx, key, ttl) }
+
+// ── HTTP 连接池 ──
+// 短请求：
+body, status, err := httpclient.GetHTTPClient().Get(ctx, url, headers)
+// SSE/流式（Timeout=0，用 ctx 控超时）：
+cl := &http.Client{Transport: httpclient.GetTransport(), Timeout: 0}
+
+// ── LLM 流式 ──
+p, _ := llm.NewOpenAICompatibleProvider("gw", llm.OpenAICompatibleConfig{
+    BaseURL: cfg.BaseURL, APIKey: cfg.APIKey, DefaultModel: "deepseek-v3",
+    Headers: map[string]string{"AI-Gateway-Uid": uid, "AI-Gateway-Product-Name": pn},
+})
+client, _ := llm.New(llm.WithProvider(p))
+ch, _ := client.GenerateStream(ctx, llm.GenerateRequest{Messages: msgs})
+// ⚠️ GenerateStream 仅输出文本 delta，不含 tool_calls 解析。
+//    需 tool_calls 时需自行用 bufio.Scanner 读 SSE（buffer ≥ 512KB，行末补 "\n\n"）
+
+// ── 配置加密（生产环境） ──
+// go-infra-cli keygen / encrypt / decrypt
+// cfg.Redis.Password = "ENC(base64...)"
+// kconfig.Load[App](kconfig.WithDecrypt(kconfig.AESKeyFromEnv("CONFIG_ENCRYPT_KEY")))
+```
+
+## 禁止事项
+
+- 不得在业务代码中 `&http.Client{}`（绕过连接池）
+- 不得 `fmt.Println` / 自建 zap（绕过统一日志）
+- 不得手写 JSON 错误体（用 `ErrorResponse`）
+- MySQL 禁止 `FOREIGN KEY` 约束
