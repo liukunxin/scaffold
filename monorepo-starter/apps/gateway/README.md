@@ -2,7 +2,7 @@
 
 默认网关服务，提供可跑的参考实现：
 
-- HTTP: `GET /health`、`GET /api/v1/runtime/ping?name=go-infra`
+- HTTP: `GET /health`、`GET /api/runtime/ping?name=go-infra`
 - WebSocket: `GET /ws`（消息广播示例）
 - gRPC: `gateway.RuntimeService/Ping`（protobuf-free 内置类型示例）
 

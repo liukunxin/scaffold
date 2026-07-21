@@ -17,6 +17,7 @@ alwaysApply: true
 - `apps/*`:
   - allowed: transport adapters, auth/parsing, invoke runtime, response rendering.
   - forbidden: domain business orchestration, direct vendor SDK/database business ops.
+- Gateway HTTP/WS path conventions: see `12-http-routing` (default `/api` without version; domain evolution via event contracts, not URL major versions).
 - `internal/*`:
   - allowed: session, event dispatcher, snapshot/replay, sequencer, ws protocol.
   - forbidden: UI/business page logic, depending on `apps` implementations.

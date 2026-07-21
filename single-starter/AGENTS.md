@@ -28,6 +28,7 @@ This repository follows a layered Go architecture based on shared SDK capabiliti
 - `internal/app`: business use-cases, services, controller, dao contracts; object packages stay module-local by default.
 - `internal/infra`: adapters for config, persistence, observability, runtime integrations.
 - `internal/route`: route registration and transport glue.
+- HTTP 约定见 `.cursor/rules/12-http-routing.mdc`：默认 `/api`（无版本）；path/query/body 分工；仅并行契约时引入 `/api/v2`。
 - `internal/app/*/logic`: use only for cross-service/domain orchestration.
 - For simple single-service pass-through, prefer `controller -> service` directly.
 - Keep both patterns visible in starter examples (one module with logic, one module without logic).

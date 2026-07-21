@@ -37,7 +37,7 @@ func Setup(router *gin.Engine) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	api := router.Group("/api/v1")
+	api := router.Group("/api")
 	api.POST("/users", userController.CreateUser)
 	api.GET("/users/:id", userController.GetUser)
 	api.GET("/demo/ping", demoController.Ping)

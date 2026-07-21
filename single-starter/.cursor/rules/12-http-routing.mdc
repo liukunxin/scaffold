@@ -1,0 +1,143 @@
+---
+description: HTTP 路由约定（默认无版本 /api；Method/参数/拆分规则）
+globs: "**/route/**/*.go,**/controller/**/*.go"
+alwaysApply: false
+---
+
+# HTTP Routing Rule（single-starter）
+
+适用：`internal/route` 注册的对外 JSON API。  
+`route` 只做 transport wiring（中间件、组装 controller、注册路径），禁止业务编排。
+
+## 默认形态（策略 B）
+
+```text
+/health                         # 探活；不进鉴权、不进业务前缀
+/metrics                        # 若启用，由 metrics 包注册
+/ws                             # 长连接；独立于 REST 前缀
+/api/<resource>[/:id][/<sub>]   # 业务 API 唯一前缀（默认无版本号）
+```
+
+正例：
+
+```text
+POST   /api/users
+GET    /api/users/:id
+GET    /api/users?page=1&page_size=20&status=active
+PATCH  /api/users/:id
+DELETE /api/users/:id
+POST   /api/orders/:id/cancel
+GET    /api/demo/ping
+POST   /api/llm/ping
+GET    /ws
+GET    /health
+```
+
+反例：
+
+```text
+❌ /users                      # 缺 /api 前缀
+❌ /api/v1/users               # 默认不要预埋版本（见「何时引入版本」）
+❌ /api/getUser                # 动词路径
+❌ /api/users/123/orders/456/items/789/comments/1  # 嵌套过深
+```
+
+## 每一层含义
+
+| 段 | 含义 | 放什么 | 不放什么 |
+|----|------|--------|----------|
+| `/api` | HTTP JSON 业务通道 | 所有 REST/JSON 业务接口 | 页面、静态资源、纯内部事件 |
+| `users` | 资源集合（名词复数） | 资源类型名 | `getUser`、`createOrder` |
+| `:id` | 资源实例 | 稳定身份 ID | 过滤条件、分页 |
+| `orders` 等子段 | 从属子资源（≤1 层为宜） | 明确归属关系 | 无限嵌套 |
+| `?a=1&b=2` | 查询视图 | 过滤/分页/排序 | 创建/更新字段、密码 |
+| body | 写入内容 | POST/PATCH 的业务数据 | GET 的查询条件 |
+
+经验法则：**path = 哪个资源；query = 怎么查；body = 改成什么样；凭证 = Header。**
+
+## Method
+
+| Method | 何时用 | 说明 |
+|--------|--------|------|
+| `GET` | 只读 | 无副作用；不带业务 body |
+| `POST` | 创建，或非 CRUD 动作/过程 | 服务端发号创建；login、发码、cancel、pay 等 |
+| `PATCH` | 部分更新（改资源的默认选择） | body 只含变更字段 |
+| `PUT` | 整资源替换且可幂等 | 少用；团队无「整替」场景可不使用 |
+| `DELETE` | 删除（含软删） | 复杂删除可例外 `POST .../delete`，但勿两套并存 |
+
+非 CRUD 动作（选一种并固定）：
+
+```text
+POST /api/<resource>/:id/<action>    # 推荐：disable / cancel / pay
+```
+
+## 参数放哪
+
+| 意图 | 位置 |
+|------|------|
+| 哪个用户/哪笔订单 | path `:id` |
+| 列表过滤、搜索、分页、排序 | query |
+| 创建/更新字段、动作附加参数 | body |
+| Token / 密钥 | Header（禁止放 path/query） |
+
+列表 query 建议字段：`page`（从 1）、`page_size`（设上限）、`sort`（如 `created_at` / `-created_at`）、明确过滤字段或 `q`。
+
+## 何时引入路径版本（默认不上 v1）
+
+默认 **策略 B：不写 `/v1`**。路径版本只为「新旧契约需要并行」服务，不是礼仪前缀。
+
+**不要**因为「以后可能会改」就预埋 `/api/v1`。
+
+### 仍走无版本时怎么演进
+
+- 已发布字段：**只增不改语义**
+- 破坏性变更：优先 **新资源/新路径**（如 `/api/user-profiles`），旧路径冻结或标废弃
+- 枚举与可选字段向后兼容；忽略未知字段
+
+### 何时才引入版本前缀
+
+同时满足再考虑：
+
+1. 旧接口在过渡期内 **必须保持可调用**；且
+2. 新契约与旧契约 **无法兼容并存于同一路径**；且
+3. 调用方无法一次性切换（多端/外部客户/长周期）
+
+落地方式：
+
+- 旧契约保持原样：`/api/...`
+- 新契约使用：`/api/v2/...`（从无版本升级时的第一版隔离前缀）
+- 仅当 **新建对外 Open API 面、且第一天就要对外承诺版本** 时，该面可用 `/api/v1/...`；对内业务默认仍无版本
+
+版本只升 major；日常变更靠兼容，不靠一年一个 vN。v1 常年不升是常态；用不到并行就不要神话版本号。
+
+## 中间件顺序
+
+```text
+Recovery → GinTraceMiddleware → HttpLogRecord → [Auth 挂需登录的 Group] → handlers
+```
+
+- `/health`、`/metrics`、公开探测接口不要误挂强制登录
+- Trace 必须在业务 handler 之前
+
+## 代码组织（single-starter）
+
+- 入口：`internal/route.Setup`
+- 模块少时可单文件 `init.go`；**模块 ≥ 3 或 Setup 明显变长时**，按域拆分仍留在 `route` 包：
+
+```text
+internal/route/
+  init.go     # Setup：全局中间件、/health、Group("/api")、调用 Register*
+  user.go     # RegisterUser(api *gin.RouterGroup, ...)
+  demo.go
+```
+
+- Controller 使用 `GinBase.SuccessResponse` / `ErrorResponse`
+- 禁止在 `route` 或 handler 手写另一套错误 JSON
+
+## 禁止
+
+- 业务路径缺少 `/api` 前缀（除 `/health` `/ws` `/metrics`）
+- 默认预埋 `/api/v1` 却无并行契约计划
+- 动词路径、`GET` 写数据、query 传密码/token
+- 在 `route` 写业务分支、查库、拼业务错误
+- 同一资源多种风格并存（单复数混用、PUT/PATCH 随意混用无约定）

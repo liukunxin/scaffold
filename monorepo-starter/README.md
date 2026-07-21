@@ -89,7 +89,7 @@ go run ./cmd/grpc
 默认示例能力：
 
 - HTTP: `GET /health`
-- Runtime: `GET /api/v1/runtime/ping?name=go-infra`
+- Runtime: `GET /api/runtime/ping?name=go-infra`
 - WebSocket: `GET /ws`（广播示例）
 - gRPC: `gateway.RuntimeService/Ping`
 

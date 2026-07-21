@@ -14,6 +14,7 @@ This project uses a monorepo + event-driven + runtime-core architecture.
 ## Layer Boundaries
 
 - `apps/*`: HTTP/WebSocket/gRPC entry, request parsing, invoking runtime, response rendering.
+- Gateway HTTP 约定见 `.cursor/rules/12-http-routing.mdc`：默认 `/api`（无版本）；跨模块演进走 event 契约，不靠 URL `/vN`。
 - `internal/*`: runtime core (`event/session/snapshot/replay/wsproto/runtime`).
 - `domains/*`: business plugins, no runtime implementation dependency.
 - `pkg|packages/*`: infrastructure adapters only; no business decisions.

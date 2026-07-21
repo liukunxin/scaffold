@@ -155,15 +155,15 @@ go run ./cmd/grpc
 默认监听 `:8080`，示例接口：
 
 - `GET /health`
-- `POST /api/v1/users`
-- `GET /api/v1/users/:id`
-- `GET /api/v1/demo/ping?name=go-infra`
+- `POST /api/users`
+- `GET /api/users/:id`
+- `GET /api/demo/ping?name=go-infra`
 - `GET /ws`（WebSocket demo）
 
 三层示例：
 
 ```bash
-curl "http://127.0.0.1:8080/api/v1/demo/ping?name=go-infra"
+curl "http://127.0.0.1:8080/api/demo/ping?name=go-infra"
 ```
 
 gRPC 示例（无 proto 文件，使用内置消息类型）：
@@ -172,10 +172,10 @@ gRPC 示例（无 proto 文件，使用内置消息类型）：
 grpcurl -plaintext 127.0.0.1:9091 demo.DemoService/Ping
 ```
 
-启用 `--features llm` 后额外提供 `POST /api/v1/llm/ping`（需配置 `llm.providers`），例如：
+启用 `--features llm` 后额外提供 `POST /api/llm/ping`（需配置 `llm.providers`），例如：
 
 ```bash
-curl -X POST "http://127.0.0.1:8080/api/v1/llm/ping" \
+curl -X POST "http://127.0.0.1:8080/api/llm/ping" \
   -H "Content-Type: application/json" \
   -d '{"prompt":"用一句话介绍 go-infra"}'
 ```
@@ -191,4 +191,5 @@ curl -X POST "http://127.0.0.1:8080/api/v1/llm/ping" \
 - `AGENTS.md`: Agent 协作约定与分层边界说明
 - `.cursor/rules/00-architecture.mdc`: 分层架构、依赖方向与基础变更安全约束
 - `.cursor/rules/10-go-sdk-first.mdc`: SDK 优先复用与 Go 实现一致性约束
+- `.cursor/rules/12-http-routing.mdc`: HTTP 路由约定（默认 `/api` 无版本；Method/参数/何时引入版本）
 

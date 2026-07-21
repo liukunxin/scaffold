@@ -1,0 +1,117 @@
+---
+description: Gateway HTTP 路由约定（默认无版本 /api；与 Event 契约分工）
+globs: "**/transport/http/**/*.go,**/apps/gateway/**/*.go"
+alwaysApply: false
+---
+
+# HTTP Routing Rule（monorepo-starter）
+
+适用：`apps/gateway` 对外暴露的 HTTP/WS。  
+Monorepo 的业务编排与跨模块协作走 **Event contracts + runtime**，不走深层 REST 嵌套，也不用 HTTP 版本号表达领域演进。
+
+## 与 single-starter 的差异（先读）
+
+| 维度 | single-starter | monorepo-starter |
+|------|----------------|------------------|
+| 路由落点 | `internal/route` | `apps/gateway/transport/http`（及必要的 handler 装配） |
+| HTTP 职责 | 模块 REST API 的主入口 | **薄网关**：鉴权/解析/调用 runtime/回写响应 |
+| 跨模块 | 同进程 `controller → logic/service` | **必须** Event 契约（见 `20-event-contracts`） |
+| 路径深度 | 可有资源与一层子资源 | 网关路径宜浅；复杂业务进 event payload |
+| 版本 | 默认无 `/vN`（策略 B） | 同左；领域契约版本在 **eventType**，不在 URL |
+
+禁止：在 gateway 里堆领域编排；禁止 domain 直接互相 HTTP 调用绕过 runtime。
+
+## 默认形态（策略 B）
+
+```text
+/health                 # 探活
+/metrics                # 若启用
+/ws                     # 实时通道（session/event 入口）
+/api/<area>/...         # 网关 JSON API（默认无版本号）
+```
+
+正例：
+
+```text
+GET  /health
+GET  /api/runtime/ping
+GET  /ws
+```
+
+反例：
+
+```text
+❌ /api/v1/runtime/ping           # 默认不预埋版本
+❌ /api/users/1/orders/2/items/3  # 网关过深；应落 event/domain
+❌ 在 transport/http 写领域状态机
+```
+
+## 每一层含义（网关视角）
+
+| 段 | 含义 |
+|----|------|
+| `/api` | 对外 HTTP JSON 通道（相对 `/ws` 的另一类入口） |
+| `runtime` / 资源名 | 网关暴露的能力面或 BFF 资源，保持浅层 |
+| `:id` | 仅当 HTTP 确需定位单一资源实例 |
+| query | 探测/过滤/分页等只读视图参数 |
+| body | 写入或触发命令的数据（仍应由 handler 转成 runtime/event，而非本地编排） |
+
+**path = 网关暴露的哪个入口；跨模块真相在 event envelope，不在 URL 层级。**
+
+## Method（网关）
+
+| Method | 典型用途 |
+|--------|----------|
+| `GET` | 探活、只读 ping、查询类 BFF |
+| `POST` | 提交命令/触发 runtime（若提供 HTTP 命令入口） |
+| `PATCH`/`PUT`/`DELETE` | 仅当网关确实暴露可写资源；默认优先命令 → event |
+
+WebSocket：`/ws` 不使用 REST 动词语义；消息形状遵守 event 契约。
+
+## 参数放哪
+
+| 意图 | 位置 |
+|------|------|
+| HTTP 资源身份 | path |
+| 只读过滤/探测参数 | query（如 `name=`） |
+| 命令内容、业务 payload | body → 再映射为 event `payload` |
+| 认证凭证 | Header |
+| 跨模块业务字段演进 | event `payload` / `eventType` 约定，**不要**靠 `/api/vN` 表达 |
+
+## 何时引入路径版本（默认不上 v1）
+
+与 single-starter 同一策略：**默认无版本**。
+
+- 领域演进：优先 **eventType 稳定 + payload 向后兼容**（见 `20-event-contracts`）
+- HTTP 路径版本仅在「网关对外 HTTP 契约必须新旧并行」时引入
+- 引入时：旧 `/api/...` 保留；新并行面用 `/api/v2/...`
+- 仅新建 **对外 Open API 面** 且第一天需对外承诺版本时，该面可用 `/api/v1`；runtime/内部网关默认仍无版本
+
+不要用 URL 版本替代 event 契约版本。
+
+## 中间件顺序
+
+```text
+Recovery → GinTraceMiddleware → HttpLogRecord → [Auth] → handlers
+```
+
+`/health` 不挂强制业务鉴权。
+
+## 代码组织（monorepo）
+
+```text
+apps/gateway/
+  transport/http/     # 注册路由、中间件；保持薄
+  transport/ws/       # WS 入口
+  internal/handler/   # 解析请求 → 调 runtime → 写响应
+```
+
+- 新增 HTTP 接口：先问「是否应是 event/WS 而不是 REST」
+- 需要跨模块：扩 event 契约，而不是加深层 REST 或 domain 直调
+
+## 禁止
+
+- 默认预埋 `/api/v1` 而无并行 HTTP 契约需求
+- gateway 内做领域编排、直连 DB/vendor 业务操作（见 `00-architecture`）
+- 用 HTTP 路径版本表达 domain/event 演进
+- 绕过 event router 的跨模块调用

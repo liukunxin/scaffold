@@ -30,7 +30,7 @@ func (s *Server) setupRoutes() {
 	s.router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
-	s.router.GET("/api/v1/runtime/ping", s.handler.HandlePing)
+	s.router.GET("/api/runtime/ping", s.handler.HandlePing)
 	s.router.GET("/ws", s.ws.Handle)
 }
 

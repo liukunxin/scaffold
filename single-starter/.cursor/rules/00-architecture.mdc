@@ -9,6 +9,7 @@ alwaysApply: true
 - `internal/app` owns business decisions; avoid transport or storage details in app logic.
 - `internal/infra` implements adapters and external integrations only.
 - `internal/route` handles transport wiring, not business orchestration.
+- HTTP path/method/param conventions: see `12-http-routing` (default `/api` without version; introduce `/api/v2` only when parallel contracts are required).
 - Prefer constructor injection over global state.
 - Keep package responsibilities aligned with starter layout (`internal/app`, `internal/infra`, `internal/bootstrap`, `internal/route`).
 - Keep `ro/dto/vo/convert` module-local by default. If something truly needs cross-project reuse, extract it to SDK packages rather than creating app-global object pools.
