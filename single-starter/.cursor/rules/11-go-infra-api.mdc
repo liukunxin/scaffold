@@ -46,11 +46,15 @@ n, _ := iredis.GetClient().Incr(ctx, key).Result()
 if int(n) > limit { iredis.GetClient().Decr(ctx, key); return errQuota }
 if n == 1 { iredis.GetClient().Expire(ctx, key, ttl) }
 
-// ── HTTP 连接池 ──
-// 短请求：
-body, status, err := httpclient.GetHTTPClient().Get(ctx, url, headers)
+// ── HTTP 连接池（RequestOption；出站 metrics 可选）──
+body, status, err := httpclient.GetHTTPClient().Get(ctx, url,
+    httpclient.WithJSON(),
+    httpclient.WithHeader("Authorization", "Bearer "+token),
+    httpclient.WithMetricPath("/users/:id"), // 有纯数字 path 段时建议显式模板
+)
 // SSE/流式（Timeout=0，用 ctx 控超时）：
 cl := &http.Client{Transport: httpclient.GetTransport(), Timeout: 0}
+// Config.MetricsEnabled=true 时上报 http_client_*；InitMetrics(cfg.AppName) 自动带 app_name 标签
 
 // ── LLM 流式 ──
 p, _ := llm.NewOpenAICompatibleProvider("gw", llm.OpenAICompatibleConfig{

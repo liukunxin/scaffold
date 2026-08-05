@@ -45,9 +45,10 @@ c.ErrorResponse(ginCtx, err)
 c.SuccessResponse(ginCtx, data)
 
 // ── HTTP 连接池 ──
-// 短请求：
-body, status, err := httpclient.GetHTTPClient().Get(ctx, url, headers)
-// 流式/SSE：
+body, status, err := httpclient.GetHTTPClient().Get(ctx, url,
+    httpclient.WithJSON(),
+    httpclient.WithMetricPath("/runtime/ping"),
+)
 cl := &http.Client{Transport: httpclient.GetTransport(), Timeout: 0}
 
 // ── LLM 流式 ──

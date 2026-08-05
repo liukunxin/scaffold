@@ -193,3 +193,5 @@ curl -X POST "http://127.0.0.1:8080/api/llm/ping" \
 - `.cursor/rules/10-go-sdk-first.mdc`: SDK 优先复用与 Go 实现一致性约束
 - `.cursor/rules/12-http-routing.mdc`: HTTP 路由约定（默认 `/api` 无版本；Method/参数/何时引入版本）
 
+生成项目时若能在上级目录发现本地 `go-infra`，CLI 会自动 `replace` 到该目录并 `go mod tidy`，确保用最新 SDK 源码。
+

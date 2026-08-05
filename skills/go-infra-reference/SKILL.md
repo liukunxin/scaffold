@@ -127,15 +127,16 @@ if n == 1 {
 ```go
 import httpclient "github.com/liukunxin/go-infra/pkg/infra/http_client"
 
-// 短请求（内置 timeout 和 body 大小限制）：
-body, status, err := httpclient.GetHTTPClient().Get(ctx, url, headers)
-body, status, err := httpclient.GetHTTPClient().Post(ctx, url, reqBody, headers)
+// 短请求（RequestOption；禁止再传 map headers）：
+body, status, err := httpclient.GetHTTPClient().Get(ctx, url,
+    httpclient.WithJSON(),
+    httpclient.WithHeader("Authorization", "Bearer "+token),
+    httpclient.WithMetricPath("/users/:id"),
+)
+body, status, err := httpclient.GetHTTPClient().Post(ctx, url, reqBody, httpclient.WithJSON())
 
 // SSE / 流式（Timeout=0，用 context 控超时）：
 streamCl := &http.Client{Transport: httpclient.GetTransport(), Timeout: 0}
-reqCtx, cancel := context.WithTimeout(ctx, 120*time.Second)
-defer cancel()
-req, _ := http.NewRequestWithContext(reqCtx, http.MethodPost, url, body)
 ```
 
 ### LLM 流式

@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/gin-gonic/gin v1.11.0
-	github.com/liukunxin/go-infra v0.0.0-20260616090631-de76158c1119
+	github.com/liukunxin/go-infra v0.0.0
 	google.golang.org/grpc v1.74.2
 	google.golang.org/protobuf v1.36.9
 )
@@ -69,5 +69,9 @@ require (
 	gorm.io/driver/mysql v1.6.0 // indirect
 	gorm.io/gorm v1.31.0 // indirect
 )
+
+// Local SDK checkout (infra/go-infra). go-infra-cli init rewrites this to the
+// correct relative path for the generated project when a local go-infra is found.
+replace github.com/liukunxin/go-infra => ../../go-infra
 
 exclude google.golang.org/genproto v0.0.0-20220503193339-ba3ae3f07e29

@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/gin-gonic/gin v1.11.0
-	github.com/liukunxin/go-infra v0.0.0-20260616090631-de76158c1119
+	github.com/liukunxin/go-infra v0.0.0
 	google.golang.org/grpc v1.74.2
 	google.golang.org/protobuf v1.36.9
 	monorepo-starter v0.0.0
@@ -60,5 +60,8 @@ require (
 )
 
 replace monorepo-starter => ../..
+
+// Template lives under scaffold/; generated projects get rewrite by go-infra-cli.
+replace github.com/liukunxin/go-infra => ../../../../go-infra
 
 exclude google.golang.org/genproto v0.0.0-20220503193339-ba3ae3f07e29

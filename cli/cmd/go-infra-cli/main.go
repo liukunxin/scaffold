@@ -446,7 +446,7 @@ func keepSceneMarkers(filePath, sceneKey string, keep bool) error {
 }
 
 func runGoModTidy(targetDir string) error {
-	// Monorepo: sync workspace then tidy each app module.
+	// Point generated modules at a nearby local go-infra before tidy.
 	if fileExists(filepath.Join(targetDir, "go.work")) {
 		syncCmd := exec.Command("go", "work", "sync")
 		syncCmd.Dir = targetDir
@@ -461,6 +461,9 @@ func runGoModTidy(targetDir string) error {
 			return err
 		}
 		for _, dir := range modDirs {
+			if err := ensureLocalGoInfraReplace(dir); err != nil {
+				return err
+			}
 			cmd := exec.Command("go", "mod", "tidy")
 			cmd.Dir = dir
 			cmd.Stdout = os.Stdout
@@ -472,6 +475,9 @@ func runGoModTidy(targetDir string) error {
 		return nil
 	}
 
+	if err := ensureLocalGoInfraReplace(targetDir); err != nil {
+		return err
+	}
 	cmd := exec.Command("go", "mod", "tidy")
 	cmd.Dir = targetDir
 	cmd.Stdout = os.Stdout

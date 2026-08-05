@@ -11,6 +11,21 @@
 go install github.com/liukunxin/scaffold/cli/cmd/go-infra-cli@latest
 ```
 
+本地开发（推荐，覆盖旧 exe）：
+
+```bash
+cd scaffold/cli
+go install ./cmd/go-infra-cli
+```
+
+`init` 时若在项目上级目录发现本地 `go-infra` 仓库，会自动写入：
+
+```text
+replace github.com/liukunxin/go-infra => <相对路径>
+```
+
+从而使用最新 SDK，而不是代理上的旧伪版本。
+
 ## 通用参数（init）
 
 - `--module`：Go module 名（默认=项目名）
