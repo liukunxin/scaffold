@@ -1,0 +1,6 @@
+# 本地开发覆盖（env=local）：只写需要覆盖的键。
+log:
+  formatter: text
+
+trace:
+  sample_ratio: 1

@@ -1,0 +1,30 @@
+# 编辑器侧固化编码与换行。
+#
+# 为什么单独需要它：模板会被 //go:embed 原样写进用户项目，Makefile 一旦带 CRLF，
+# 在 Linux/macOS/WSL 下 make 会直接报 "missing separator"。仓库根的 .gitattributes
+# 负责保底纠正，这里让编辑器从一开始就不写出 CRLF。
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.go]
+indent_style = tab
+
+[Makefile]
+indent_style = tab
+
+[*.{yml,yaml,json}]
+indent_size = 2
+
+# Markdown 行尾两个空格表示硬换行，不要被自动裁掉。
+[*.md]
+trim_trailing_whitespace = false
+
+[*.mdc]
+trim_trailing_whitespace = false

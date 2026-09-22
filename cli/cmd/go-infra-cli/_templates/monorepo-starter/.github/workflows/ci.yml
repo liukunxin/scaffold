@@ -1,0 +1,67 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # 目录约定是硬约束：不满足就失败，避免骨架被慢慢改散。
+  structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 目录约定检查
+        run: python3 tools/lint/check-structure.py
+
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+      # 根目录不是 Go 模块，逐模块构建；与 `make check` 保持一致。
+      - name: gofmt
+        run: |
+          for m in packages/go/*/ services/*/ apps/*/; do
+            [ -f "$m/go.mod" ] || continue
+            out=$(gofmt -l "$m")
+            if [ -n "$out" ]; then echo "$out"; exit 1; fi
+          done
+      - name: build & test
+        run: |
+          go work sync
+          for m in packages/go/*/ services/*/ apps/*/; do
+            [ -f "$m/go.mod" ] || continue
+            echo "==> $m"
+            (cd "$m" && go build ./... && go test ./...)
+          done
+
+  # 前端 / Python 等非 Go Project 各自一个 job。
+  # 新增同类 Project 时，复制这个 job 并改路径。
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: install & build
+        run: |
+          npm install --prefix apps/web --no-audit --no-fund
+          npm run build --prefix apps/web
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 契约绑定自检
+        run: |
+          python -c "import sys; sys.path.insert(0, 'packages/python/contracts/src'); import contracts; print(contracts.new_envelope('e1', 'demo.ping.completed.v1').to_wire())"

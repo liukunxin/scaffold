@@ -1,0 +1,21 @@
+# 统一换行。仓库里的 Makefile 一旦带 CRLF，在 Linux/macOS/WSL 下 make 会直接报
+# "missing separator" —— 这个坑排查起来很费时间，所以用 .gitattributes 把它固化掉。
+* text=auto eol=lf
+
+# Windows 专用脚本保留 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# 二进制文件不做换行转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.exe binary

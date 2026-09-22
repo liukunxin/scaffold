@@ -1,0 +1,88 @@
+---
+description: Project 对外 HTTP 路由约定（默认无版本 /api；与契约版本的分工）
+globs: "**/internal/route/**/*.go,**/services/**/*.go,**/apps/**/*.go"
+alwaysApply: false
+---
+
+# HTTP Routing Rule
+
+适用：Go Project（`services/*`、`apps/*`）对外暴露的 HTTP / WS。
+路径版本与领域演进是两件事：**路径版本只表达"网关对外契约新旧并行"，领域演进走 `contracts/`。**
+
+## 与 single-starter 的关系
+
+Go Project 的内部结构就是 single-starter，所以 HTTP 约定也一致：
+
+| 维度 | 约定 |
+|------|------|
+| 路由落点 | `internal/route`（或 Project 自己的 transport 层） |
+| 跨 Project | **必须**走 HTTP / gRPC / Event 契约（见 `20-contracts`），不共享进程内代码 |
+| 版本 | 默认无 `/vN`；领域演进在 `eventType`，不在 URL |
+
+## 默认路径形态（策略 B）
+
+```text
+/health                 # 探活
+/metrics                # 若启用
+/ws                     # 实时通道
+/api/<area>/...         # JSON API（默认无版本号）
+```
+
+正例：
+
+```text
+GET  /health
+GET  /api/demo/ping
+GET  /ws
+```
+
+反例：
+
+```text
+❌ /api/v1/demo/ping          # 默认不预埋版本
+❌ /api/users/1/orders/2/items/3   # 过深；应落到领域服务 / 契约
+❌ 在 route 层写领域状态机
+```
+
+## 参数放哪
+
+| 意图 | 位置 |
+|------|------|
+| 资源身份 | path |
+| 只读过滤/探测参数 | query（如 `name=`） |
+| 命令内容、业务 payload | body |
+| 认证凭证 | Header |
+| 跨 Project 业务字段演进 | 契约（`contracts/`）里的 payload，**不要**靠 `/api/vN` 表达 |
+
+## 何时引入路径版本（默认不上 v1）
+
+- 领域演进：优先契约向后兼容（加字段、留旧字段）
+- HTTP 路径版本仅在「**对外** HTTP 契约必须新旧并行」时引入；引入时旧 `/api/...` 保留，新面用 `/api/v2/...`
+- 仅新建对外 Open API 面且第一天需对外承诺版本时，该面可用 `/api/v1`；内部网关默认仍无版本
+
+## 中间件顺序
+
+```text
+Recovery -> [Cors] -> GinTraceMiddleware -> HttpLogRecord -> [Auth] -> handlers
+```
+
+`/health` 不挂强制业务鉴权。
+
+## 代码组织
+
+```text
+services/<name>/
+  internal/route/       # 注册路由、中间件
+  internal/app/<domain>/
+    controller/         # 解析请求 -> 调 service -> 写响应
+```
+
+- 新增 HTTP 接口前先问：**这是另一个 Project 要用的能力吗？** 是的话先定契约，再各自实现。
+- 需要与别的 Project 协作：扩 `contracts/`，而不是 import 对方的 `internal/`。
+
+## 禁止
+
+- 默认预埋 `/api/v1` 而并无并行契约需求
+- 在 `route` 层做领域编排
+- 用 HTTP 路径版本表达领域 / 契约演进
+- 跨 Project 绕过契约的调用

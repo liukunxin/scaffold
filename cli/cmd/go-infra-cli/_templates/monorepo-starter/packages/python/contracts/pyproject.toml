@@ -1,0 +1,13 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "repo-contracts"
+version = "0.0.0"
+description = "跨 Project 事件契约的 Python 绑定（contracts/events/envelope.schema.json）"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/contracts"]

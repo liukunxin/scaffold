@@ -1,0 +1,31 @@
+---
+description: Enforce go-infra SDK-first policy for technical capabilities
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# SDK-First Rule
+
+- 新增基础设施代码之前，先查 `github.com/liukunxin/go-infra` 有没有等价能力。
+- 日志 / 链路 / 错误 / 配置 / mysql / redis / http-client / grpc / ws / kafka / llm 一律复用 SDK。
+- 集成点放在 Project 的 `internal/bootstrap` 或 `internal/infra`，包装要薄。
+- 不要另起一套日志、链路、错误栈。
+- SDK 确实缺失时，才加最小适配器，并写明原因。
+
+## 基线能力（默认启用，不是 feature 开关）
+
+| 能力 | 包 | 说明 |
+|---|---|---|
+| 日志 | `pkg/base/log` | bootstrap 里 `log.Init`；业务用 `log.WithContext(ctx)` |
+| 链路 | `pkg/base/trace` | bootstrap 里 `trace.Init` + `GinTraceMiddleware` |
+| 错误 | `pkg/base/errors` | `kerr.WrapError(status, code, err)`；controller 用 `GinBase.ErrorResponse` |
+| 配置 | `pkg/base/config` | `kconfig.Load[T](...)`，支持环境覆盖与 `ENC(...)` 解密 |
+| ID | `pkg/base/uuid` | `uuid.GetIDService().GenerateUserID()/GenerateShortID()` |
+
+## 依赖位置
+
+- 基础设施初始化：`services/*/internal/bootstrap/`、`apps/*/internal/bootstrap/`
+- 跨 Project 复用的适配：`packages/<lang>/`（准入门槛见 `packages/README.md`）
+- 业务逻辑：`internal/app/*`，只调接口，不直接 new 基础设施客户端
+
+> 包清单与用法速查见 `11-go-infra-api.mdc`；完整文档见 go-infra 仓库 `README.md`。

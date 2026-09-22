@@ -1,5 +1,0 @@
-log:
-  level: 2
-
-trace:
-  sample_ratio: 0.5

@@ -1,0 +1,59 @@
+---
+description: 跨 Project 契约（contracts/）的边界、演进与命名规则
+alwaysApply: true
+---
+
+# Contracts Rule
+
+Project 之间**不允许**共享进程内代码，只通过 HTTP / gRPC / Message-Event 通信。
+双方共同的、不依赖任何一方实现的定义，放在 `contracts/`。
+
+## 分工
+
+| 位置 | 放什么 |
+|---|---|
+| `contracts/proto/` | gRPC / IDL（`.proto`） |
+| `contracts/openapi/` | 对外 HTTP 契约 |
+| `contracts/json-schema/` | 通用数据结构 |
+| `contracts/events/` | 跨 Project 的异步事件 |
+| `packages/<lang>/*` | 上面这些的**各语言绑定**（生成物） |
+
+`contracts/` 里**只放定义**，不放任何语言的实现代码。
+
+## 事件信封
+
+跨 Project 事件统一用 `contracts/events/envelope.schema.json` 的信封；
+Go 绑定在 `packages/go/contracts/events`。
+
+```json
+{
+  "eventId": "string",
+  "eventType": "string",
+  "sessionId": "string",
+  "seq": "int64",
+  "timestamp": "int64",
+  "payload": {}
+}
+```
+
+约束：
+
+- `eventType` 形如 `<domain>.<entity>.<action>.v<major>`，**版本表达在 eventType 里**。
+- `seq` 在同一 `sessionId` 内单调递增。
+- `timestamp` 用 Unix 毫秒。
+- `payload` 只允许向后兼容的变更：**加字段可以，改语义 / 删字段不行**。
+- 消费方**必须忽略未知字段**，以便发送方先行升级。
+
+## 演进
+
+- 契约变更必须**向后兼容**；破坏性变更走新 `eventType` 版本或新接口路径，旧版本保留到消费方全部升级。
+- 用 HTTP 路径版本（`/api/v2`）表达**网关对外契约**的新旧并行；
+  **不要**用它表达 event / 领域演进（那是 `eventType` 的职责）。
+- 改了 `contracts/` 就要同步重新生成 `packages/*/` 的绑定，并在 CI 里校验生成物无 diff（见 `tools/README.md`）。
+- 每个契约要有明确 owner。没有 owner 的契约等于没有契约。
+
+## 禁止
+
+- 把 `contracts/` 当成"又一处共享代码目录"——写进业务逻辑或实现。
+- Project A import Project B 的 `internal/`，或绕过契约直接调对方进程内代码。
+- 手抄一份与 `contracts/` 不一致的本地结构（应由生成物提供）。

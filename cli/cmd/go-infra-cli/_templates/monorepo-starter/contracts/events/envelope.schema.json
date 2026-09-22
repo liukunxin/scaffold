@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/contracts/events/envelope.schema.json",
+  "title": "EventEnvelope",
+  "description": "跨 Project 事件的统一信封。Go 绑定见 packages/go/contracts/events/envelope.go。",
+  "type": "object",
+  "required": ["eventId", "eventType", "timestamp"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "description": "全局唯一事件 ID。",
+      "minLength": 1
+    },
+    "eventType": {
+      "type": "string",
+      "description": "稳定的事件类型名，形如 <domain>.<entity>.<action>.v<major>。版本表达在 eventType 里，不要靠 URL 路径版本。",
+      "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*\\.v[0-9]+$"
+    },
+    "sessionId": {
+      "type": "string",
+      "description": "可选的会话 / 聚合根标识。"
+    },
+    "seq": {
+      "type": "integer",
+      "description": "同一 sessionId 内单调递增。",
+      "minimum": 0
+    },
+    "timestamp": {
+      "type": "integer",
+      "description": "Unix 毫秒。",
+      "minimum": 0
+    },
+    "payload": {
+      "type": "object",
+      "description": "业务负载。只允许向后兼容的变更：加字段可以，改语义/删字段不行。消费方必须忽略未知字段。",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

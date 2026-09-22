@@ -1,0 +1,3 @@
+# 测试环境覆盖（env=test）。
+trace:
+  sample_ratio: 0.1

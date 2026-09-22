@@ -1,0 +1,7 @@
+# 容器内运行的覆盖（env=docker）。
+#
+# 只写需要覆盖的键，其余继承 config.yml。
+# 容器里的服务地址不能用 127.0.0.1 指宿主，要用 compose 里的服务名。
+redis:
+  addresses:
+    - "redis:6379"

@@ -1,0 +1,12 @@
+go 1.25
+
+use (
+	./packages/go/contracts
+	./services/gateway
+)
+
+// go-infra v1.0.2 间接依赖拆分前的单体 google.golang.org/genproto（该版本内含 googleapis/rpc/*），
+// 与 grpc 依赖的拆分模块 google.golang.org/genproto/googleapis/rpc 同时出现在 workspace 构建列表里，
+// 会报 ambiguous import。单模块工程会被 go mod tidy 剪掉，workspace 模式不会剪，所以在这里兜底：
+// 把单体模块抬到拆分之后的版本（已不含 googleapis/rpc）。go-infra 摘掉该依赖后本行即可删除。
+replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20250528174236-200df99c418a

@@ -69,46 +69,54 @@ func printUsage() {
 	fmt.Println("  go-infra-cli init <project-name> [flags]")
 	fmt.Println("  go-infra-cli add <features> [flags]")
 	fmt.Println("  go-infra-cli remove <features> [flags]")
-	fmt.Println("  go-infra-cli mono add app <name> [--dir <project-root>]")
-	fmt.Println("  go-infra-cli mono add domain <name> [--dir <project-root>]")
+	fmt.Println("  go-infra-cli mono add app|service <name> [--dir <monorepo-root>]")
 	fmt.Println("  go-infra-cli keygen")
 	fmt.Println("  go-infra-cli encrypt --value=<plaintext> [--key=<hex>|--key-env=<ENV>]")
 	fmt.Println("  go-infra-cli decrypt --value=<ENC(...)> [--key=<hex>|--key-env=<ENV>]")
 	fmt.Println("  go-infra-cli version")
 	fmt.Println()
 	fmt.Println("common flags:")
-	fmt.Println("  init: --layout single|monorepo --module --app-name --features --scenes --output --force --skip-tidy")
-	fmt.Println("  add/remove: --dir")
-	fmt.Println("  features: mysql,redis,metrics,pprof,http-client,traffic (llm via init --features llm)")
+	fmt.Println("  init: --layout single|monorepo --module --app-name --features --scenes --output --force --skip-tidy --use-local-sdk")
+	fmt.Println("  add/remove/mono add: --dir")
+	fmt.Println("  features: mysql,redis,metrics,pprof,http-client,traffic,llm")
+	fmt.Println("            (llm ships extra files: add/remove installs or reclaims them too)")
+	fmt.Println("  scenes: http,grpc,ws (default: all; http is always kept)")
 	fmt.Println("  encrypt/decrypt: --key (hex) or --key-env (default: CONFIG_ENCRYPT_KEY)")
+	fmt.Println()
+	fmt.Println("layouts:")
+	fmt.Println("  single   -> single-starter: one Go project (cmd/http + cmd/grpc + internal/{app,bootstrap,infra,route})")
+	fmt.Println("  monorepo -> monorepo-starter: apps/ services/ packages/ contracts/ tools/ deploy/ docs/")
+	fmt.Println("              Go projects under apps|services follow the single-starter layout;")
+	fmt.Println("              add more with `mono add app|service`.")
 }
 
 func runInit(args []string) error {
-	fs := flag.NewFlagSet("init", flag.ContinueOnError)
-	moduleName := fs.String("module", "", "go module name")
-	appName := fs.String("app-name", "", "app_name in config")
-	layout := fs.String("layout", "single", "project layout: single|monorepo")
-	output := fs.String("output", ".", "output directory")
-	template := fs.String("template", "", "template directory path")
-	force := fs.Bool("force", false, "overwrite existing directory")
-	features := fs.String("features", "", "comma-separated install list: mysql,redis,metrics,pprof,http-client,traffic,llm")
-	scenes := fs.String("scenes", "", "comma-separated runtime scenes: http,grpc,ws")
-	skipTidy := fs.Bool("skip-tidy", false, "skip go mod tidy")
+	flags := flag.NewFlagSet("init", flag.ContinueOnError)
+	moduleName := flags.String("module", "", "go module name")
+	appName := flags.String("app-name", "", "app_name in config")
+	layout := flags.String("layout", "single", "project layout: single|monorepo")
+	output := flags.String("output", ".", "output directory")
+	template := flags.String("template", "", "override template directory (default: embedded templates)")
+	force := flags.Bool("force", false, "overwrite existing directory")
+	features := flags.String("features", "", "comma-separated install list: mysql,redis,metrics,pprof,http-client,traffic,llm")
+	scenes := flags.String("scenes", "", "comma-separated runtime scenes: http,grpc,ws (default: all)")
+	skipTidy := flags.Bool("skip-tidy", false, "skip go mod tidy and the generated-project build check")
+	useLocalSDK := flags.Bool("use-local-sdk", false, "point go-infra at a nearby local checkout (dev only)")
 
 	var projectName string
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		projectName = strings.TrimSpace(args[0])
-		if err := fs.Parse(args[1:]); err != nil {
+		if err := flags.Parse(args[1:]); err != nil {
 			return err
 		}
 	} else {
-		if err := fs.Parse(args); err != nil {
+		if err := flags.Parse(args); err != nil {
 			return err
 		}
-		if fs.NArg() < 1 {
+		if flags.NArg() < 1 {
 			return errors.New("project-name is required")
 		}
-		projectName = strings.TrimSpace(fs.Arg(0))
+		projectName = strings.TrimSpace(flags.Arg(0))
 	}
 	if projectName == "" {
 		return errors.New("project-name cannot be empty")
@@ -132,16 +140,30 @@ func runInit(args []string) error {
 		return fmt.Errorf("unsupported layout %q: only single|monorepo are allowed", *layout)
 	}
 
-	configFlags, resolvedLLM, err := parseInitFeaturesArg(*features)
+	rawFeatures := strings.TrimSpace(*features)
+	rawScenes := strings.TrimSpace(*scenes)
+	if layoutName == "monorepo" {
+		// monorepo 是「各 Project 一个 module + go.work」的布局，没有单一
+		// internal/bootstrap/app.go 可注入；能力增删针对具体 Project 执行。
+		// --scenes 同理只服务 single：mono add 没有场景选择，Project 恒为全场景。
+		if rawFeatures != "" {
+			return errors.New("--features is not supported for --layout monorepo: run `go-infra-cli add <features> --dir services/<name>` on the target project instead")
+		}
+		if rawScenes != "" {
+			return errors.New("--scenes is not supported for --layout monorepo: scene trimming is only available for --layout single; monorepo projects are always generated with all scenes (http,grpc,ws)")
+		}
+	}
+
+	configFlags, resolvedLLM, err := parseInitFeaturesArg(rawFeatures)
 	if err != nil {
 		return err
 	}
-	sceneFlags, err := parseInitScenesArg(*scenes)
+	sceneFlags, err := parseInitScenesArg(rawScenes)
 	if err != nil {
 		return err
 	}
 
-	templateDir, err := resolveTemplateDir(*template, layoutName)
+	src, err := resolveTemplate(*template, layoutName)
 	if err != nil {
 		return err
 	}
@@ -156,57 +178,73 @@ func runInit(args []string) error {
 		return err
 	}
 
-	if err = copyTree(templateDir, targetDir); err != nil {
+	if err = copyTree(src, targetDir); err != nil {
 		return err
 	}
+
 	if layoutName == "single" {
+		// llm 覆盖文件里含模板模块路径，必须在渲染前拷进来。
 		if err = applyLLMOverlay(targetDir, resolvedLLM); err != nil {
-			return err
-		}
-		if err = syncAllConfigFeatures(targetDir, configFlags); err != nil {
 			return err
 		}
 		if err = applySceneSelection(targetDir, sceneFlags); err != nil {
 			return err
 		}
-	} else {
-		// Monorepo starter currently has fixed runtime skeleton and does not use
-		// single-repo feature/scenes mutation logic.
-		if strings.TrimSpace(*features) != "" {
-			return errors.New("--features is not supported for --layout monorepo in MVP")
-		}
-		if strings.TrimSpace(*scenes) != "" {
-			return errors.New("--scenes is not supported for --layout monorepo in MVP")
-		}
 	}
 
-	if err = replaceStarterStrings(targetDir, *moduleName); err != nil {
+	// 渲染分两步：模块路径（go.mod/import）与展示名（文档/config）分开处理。
+	if err = renderTemplate(targetDir, src.name, *moduleName, projectName); err != nil {
 		return err
 	}
-	if err = updateConfigYAML(filepath.Join(targetDir, "configs", "config.yml"), *appName); err != nil {
-		return err
-	}
+
 	if layoutName == "single" {
-		if err = applyInitMySQLDSN(targetDir, configFlags["mysql"]); err != nil {
+		// monorepo 下每个 Project 有自己的 configs/，--app-name 映射不到唯一目标，
+		// 因此这条只对 single 生效（monorepo 的展示名已由 renderTemplate 处理）。
+		if err = updateConfigYAML(filepath.Join(targetDir, "configs"), *appName); err != nil {
+			return err
+		}
+		if err = syncAllFeatures(targetDir, configFlags, resolvedLLM); err != nil {
 			return err
 		}
 	}
 
-	if !*skipTidy {
-		if err = runGoModTidy(targetDir); err != nil {
+	if err = formatGoSources(targetDir); err != nil {
+		return err
+	}
+
+	if *useLocalSDK {
+		if err = ensureLocalGoInfraReplace(targetDir); err != nil {
 			return err
+		}
+	}
+
+	if *skipTidy {
+		fmt.Println("skip-tidy: skipped go mod tidy and build verification; run 'go mod tidy && go build ./...' yourself")
+	} else {
+		if err = runGoModTidy(targetDir); err != nil {
+			return rollbackTarget(targetDir, err)
+		}
+		if err = verifyGeneratedProject(targetDir); err != nil {
+			return rollbackTarget(targetDir, err)
 		}
 	}
 
 	fmt.Printf("project generated: %s\n", targetDir)
-	fmt.Printf("next steps:\n  cd %s\n", targetDir)
+	fmt.Println("next steps:")
+	fmt.Printf("  cd %s\n", targetDir)
 	if layoutName == "single" {
 		fmt.Println("  go run ./cmd/http")
 		if sceneFlags["grpc"] {
 			fmt.Println("  go run ./cmd/grpc")
 		}
+		// 启用了「不填参数就用不起来」的能力时提醒一句：否则用户会以为装完就能跑。
+		if needConfig := configHintList(configFlags, resolvedLLM); len(needConfig) > 0 {
+			fmt.Printf("  fill configs/config.yml to enable: %s\n", strings.Join(needConfig, ", "))
+		}
 	} else {
-		fmt.Println("  go run ./apps/gateway/cmd")
+		fmt.Println("  cd services/gateway && go run ./cmd/http   # example Project")
+		fmt.Println("  go-infra-cli mono add service <name>        # add another Go Project")
+		fmt.Println("  make check                                  # fmt + tidy + build + test")
 	}
 	return nil
 }
@@ -222,52 +260,6 @@ func validateProjectName(name string) error {
 	return nil
 }
 
-func resolveTemplateDir(explicit, layout string) (string, error) {
-	if explicit != "" {
-		return validateTemplateDir(explicit)
-	}
-	templateName := "single-starter"
-	if layout == "monorepo" {
-		templateName = "monorepo-starter"
-	}
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-	for {
-		candidates := []string{
-			filepath.Join(wd, templateName),
-			filepath.Join(wd, "scaffold", templateName),
-			filepath.Join(wd, "..", templateName),
-		}
-		for _, candidate := range candidates {
-			if dirExists(candidate) {
-				return candidate, nil
-			}
-		}
-		parent := filepath.Dir(wd)
-		if parent == wd {
-			break
-		}
-		wd = parent
-	}
-	return "", errors.New("cannot find template dir; set --template explicitly")
-}
-
-func validateTemplateDir(path string) (string, error) {
-	abs, err := filepath.Abs(path)
-	if err != nil {
-		return "", err
-	}
-	if !dirExists(abs) {
-		return "", fmt.Errorf("template directory not found: %s", abs)
-	}
-	if !fileExists(filepath.Join(abs, "go.mod")) && !fileExists(filepath.Join(abs, "go.work")) {
-		return "", fmt.Errorf("template directory %s missing go.mod/go.work", abs)
-	}
-	return abs, nil
-}
-
 func prepareTargetDir(target string, force bool) error {
 	if !fileOrDirExists(target) {
 		return nil
@@ -276,69 +268,6 @@ func prepareTargetDir(target string, force bool) error {
 		return fmt.Errorf("target directory already exists: %s (use --force to overwrite)", target)
 	}
 	return os.RemoveAll(target)
-}
-
-func copyTree(srcDir, dstDir string) error {
-	return filepath.WalkDir(srcDir, func(path string, d fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		rel, err := filepath.Rel(srcDir, path)
-		if err != nil {
-			return err
-		}
-		if rel == "_features" || strings.HasPrefix(rel, "_features"+string(filepath.Separator)) {
-			if d.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		if rel == "." {
-			return os.MkdirAll(dstDir, 0o755)
-		}
-		dstPath := filepath.Join(dstDir, rel)
-		if d.IsDir() {
-			return os.MkdirAll(dstPath, 0o755)
-		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		return os.WriteFile(dstPath, data, 0o644)
-	})
-}
-
-func replaceStarterStrings(targetDir, moduleName string) error {
-	return filepath.WalkDir(targetDir, func(path string, d fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if d.IsDir() || !isTextTemplateFile(path) {
-			return nil
-		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		content := string(data)
-		content = strings.ReplaceAll(content, "single-starter", moduleName)
-		content = strings.ReplaceAll(content, "monorepo-starter", moduleName)
-		// Legacy placeholders still replaced for historical templates.
-		content = strings.ReplaceAll(content, "go-infra-starter", moduleName)
-		content = strings.ReplaceAll(content, "go-infra-monorepo-starter", moduleName)
-		return os.WriteFile(path, []byte(content), 0o644)
-	})
-}
-
-func updateConfigYAML(path, appName string) error {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	content := string(data)
-	content = replaceLineByPrefix(content, "app_name:", fmt.Sprintf("app_name: %s", appName))
-	content = replaceLineByPrefix(content, "service_name:", fmt.Sprintf("service_name: %s", appName))
-	return os.WriteFile(path, []byte(content), 0o644)
 }
 
 func applyLLMOverlay(targetDir string, withLLM bool) error {
@@ -351,141 +280,59 @@ func applyLLMOverlay(targetDir string, withLLM bool) error {
 	return nil
 }
 
-func applyInitMySQLDSN(targetDir string, withMySQL bool) error {
-	if withMySQL {
-		return nil
-	}
-	configPath := filepath.Join(targetDir, "configs", "config.yml")
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		return err
-	}
-	content := replaceLineByPrefix(string(data), "  dsn:", `  dsn: ""`)
-	return os.WriteFile(configPath, []byte(content), 0o644)
-}
-
-func parseInitScenesArg(raw string) (map[string]bool, error) {
-	// Default scene is always HTTP.
-	scenes := map[string]bool{
-		"http": true,
-		"grpc": false,
-		"ws":   false,
-	}
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return scenes, nil
-	}
-	for _, part := range strings.Split(raw, ",") {
-		scene := strings.TrimSpace(strings.ToLower(part))
-		if scene == "" {
-			continue
-		}
-		switch scene {
-		case "http", "grpc", "ws":
-			scenes[scene] = true
-		default:
-			return nil, fmt.Errorf("unsupported scene %q: only http,grpc,ws are allowed", scene)
-		}
-	}
-	// ws runs on http upgrade, so http must exist.
-	if scenes["ws"] {
-		scenes["http"] = true
-	}
-	return scenes, nil
-}
-
-func applySceneSelection(projectDir string, scenes map[string]bool) error {
-	if !scenes["ws"] {
-		_ = os.RemoveAll(filepath.Join(projectDir, "internal", "app", "realtime"))
-	}
-
-	if scenes["grpc"] {
-		return keepSceneMarkers(filepath.Join(projectDir, "internal", "route", "init.go"), "SCENE_WS", scenes["ws"])
-	}
-
-	// grpc scene disabled: remove grpc demo command and bootstrap wiring.
-	_ = os.RemoveAll(filepath.Join(projectDir, "cmd", "grpc"))
-	_ = os.Remove(filepath.Join(projectDir, "internal", "bootstrap", "grpc.go"))
-	_ = os.RemoveAll(filepath.Join(projectDir, "internal", "app", "demo", "grpc"))
-
-	return keepSceneMarkers(filepath.Join(projectDir, "internal", "route", "init.go"), "SCENE_WS", scenes["ws"])
-}
-
-func keepSceneMarkers(filePath, sceneKey string, keep bool) error {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return err
-	}
-	content := string(data)
-	startMarker := "// " + sceneKey + "_START"
-	endMarker := "// " + sceneKey + "_END"
-
-	lines := strings.Split(content, "\n")
-	out := make([]string, 0, len(lines))
-	inBlock := false
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == startMarker {
-			inBlock = true
-			if keep {
-				continue
-			}
-			continue
-		}
-		if trimmed == endMarker {
-			inBlock = false
-			continue
-		}
-		if inBlock && !keep {
-			continue
-		}
-		out = append(out, line)
-	}
-
-	return os.WriteFile(filePath, []byte(strings.Join(out, "\n")), 0o644)
-}
-
+// runGoModTidy 只做依赖整理，不再改写 go.mod 的 replace。
+// 模板本身 require 发布版 go-infra，任何机器都能解析；本地 SDK 需显式 --use-local-sdk。
 func runGoModTidy(targetDir string) error {
-	// Point generated modules at a nearby local go-infra before tidy.
 	if fileExists(filepath.Join(targetDir, "go.work")) {
-		syncCmd := exec.Command("go", "work", "sync")
-		syncCmd.Dir = targetDir
-		syncCmd.Stdout = os.Stdout
-		syncCmd.Stderr = os.Stderr
-		if err := syncCmd.Run(); err != nil {
+		if err := runGo(targetDir, "work", "sync"); err != nil {
 			return fmt.Errorf("run go work sync: %w", err)
 		}
-
-		modDirs, err := collectModuleDirs(targetDir)
-		if err != nil {
-			return err
-		}
-		for _, dir := range modDirs {
-			if err := ensureLocalGoInfraReplace(dir); err != nil {
-				return err
-			}
-			cmd := exec.Command("go", "mod", "tidy")
-			cmd.Dir = dir
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			if err := cmd.Run(); err != nil {
-				return fmt.Errorf("run go mod tidy in %s: %w", dir, err)
-			}
-		}
-		return nil
 	}
 
-	if err := ensureLocalGoInfraReplace(targetDir); err != nil {
+	modDirs, err := collectModuleDirs(targetDir)
+	if err != nil {
 		return err
 	}
-	cmd := exec.Command("go", "mod", "tidy")
-	cmd.Dir = targetDir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("run go mod tidy: %w", err)
+	if len(modDirs) == 0 {
+		return fmt.Errorf("no go.mod found under %s", targetDir)
+	}
+	for _, dir := range modDirs {
+		if err = runGo(dir, "mod", "tidy"); err != nil {
+			return fmt.Errorf("run go mod tidy in %s: %w", dir, err)
+		}
 	}
 	return nil
+}
+
+// verifyGeneratedProject 自检生成物能编译。模板或渲染链路一坏就地失败，
+// 不留「生成即坏」的项目——这正是之前 replace 写法埋下的坑。
+func verifyGeneratedProject(targetDir string) error {
+	modDirs, err := collectModuleDirs(targetDir)
+	if err != nil {
+		return err
+	}
+	for _, dir := range modDirs {
+		if err = runGo(dir, "build", "./..."); err != nil {
+			return fmt.Errorf("generated project does not build (%s): %w", dir, err)
+		}
+	}
+	fmt.Println("verify: go build ./... ok")
+	return nil
+}
+
+func rollbackTarget(targetDir string, cause error) error {
+	if err := os.RemoveAll(targetDir); err != nil {
+		return fmt.Errorf("%w (also failed to remove %s: %v)", cause, targetDir, err)
+	}
+	return fmt.Errorf("%w (broken output removed: %s)", cause, targetDir)
+}
+
+func runGo(dir string, args ...string) error {
+	cmd := exec.Command("go", args...)
+	cmd.Dir = dir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func collectModuleDirs(root string) ([]string, error) {
@@ -503,37 +350,6 @@ func collectModuleDirs(root string) ([]string, error) {
 		return nil, fmt.Errorf("discover go modules: %w", err)
 	}
 	return out, nil
-}
-
-func replaceLineByPrefix(content, prefix, replacement string) string {
-	lines := strings.Split(content, "\n")
-	for i, line := range lines {
-		if strings.HasPrefix(strings.TrimSpace(line), strings.TrimSpace(prefix)) {
-			indent := leadingSpace(line)
-			lines[i] = indent + strings.TrimSpace(replacement)
-			return strings.Join(lines, "\n")
-		}
-	}
-	return content
-}
-
-func leadingSpace(s string) string {
-	for i, ch := range s {
-		if ch != ' ' && ch != '\t' {
-			return s[:i]
-		}
-	}
-	return s
-}
-
-func isTextTemplateFile(path string) bool {
-	ext := strings.ToLower(filepath.Ext(path))
-	switch ext {
-	case ".go", ".mod", ".sum", ".yml", ".yaml", ".md", ".mdc", ".txt", ".json":
-		return true
-	default:
-		return false
-	}
 }
 
 func dirExists(path string) bool {

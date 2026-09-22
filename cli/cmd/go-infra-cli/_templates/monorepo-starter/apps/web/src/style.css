@@ -1,0 +1,44 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", sans-serif;
+  line-height: 1.6;
+}
+
+body {
+  margin: 0;
+  padding: 2rem 1rem;
+}
+
+#app {
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 1.25rem;
+}
+
+button {
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  border: 1px solid currentColor;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+pre {
+  padding: 0.75rem;
+  border-radius: 6px;
+  background: rgba(127, 127, 127, 0.15);
+  overflow-x: auto;
+}
+
+.muted {
+  opacity: 0.7;
+  font-size: 0.875rem;
+}
+
+.error {
+  color: #c0392b;
+}

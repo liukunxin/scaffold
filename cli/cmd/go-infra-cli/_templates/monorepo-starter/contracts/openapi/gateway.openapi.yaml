@@ -1,0 +1,111 @@
+openapi: 3.1.0
+
+info:
+  title: gateway
+  version: 0.0.0
+  description: |
+    services/gateway 的对外 HTTP 契约。这里只放**定义**，语言中立。
+
+    - 实现：services/gateway/internal/route/init.go
+    - 前端调用：apps/web/src/api.ts（类型来自 packages/typescript/contracts）
+    - 改契约时三处同一次提交：本文件 → 实现 → 各语言绑定
+
+servers:
+  - url: http://127.0.0.1:8080
+    description: 本地开发（apps/web 的 vite 已把 /api 反代到这里）
+
+tags:
+  - name: ops
+    description: 运维面
+  - name: demo
+    description: 示例接口
+
+paths:
+  /health:
+    get:
+      tags: [ops]
+      operationId: health
+      summary: 探活
+      description: 刻意返回裸 JSON（不套 ApiResponse），供 LB / K8s 直接判定。
+      responses:
+        "200":
+          description: 服务正常
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+
+  /api/demo/ping:
+    get:
+      tags: [demo]
+      operationId: demoPing
+      summary: 演示接口，返回包在事件信封里的 pong
+      parameters:
+        - name: name
+          in: query
+          required: false
+          description: 留空时使用 "world"。
+          schema:
+            type: string
+            default: world
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Ping"
+        "500":
+          description: 服务端错误（响应体同样是 ApiResponse，code 非 0）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Ping"
+
+components:
+  schemas:
+    ApiResponse_Ping:
+      type: object
+      description: go-infra 的统一响应壳（pkg/biz/controller.CommonResponse）。
+      required: [code, msg, trace_id]
+      properties:
+        code:
+          type: integer
+          description: 0 表示成功；非 0 为业务错误码。
+        msg:
+          type: string
+        trace_id:
+          type: string
+        data:
+          $ref: "#/components/schemas/EventEnvelope"
+
+    EventEnvelope:
+      type: object
+      description: |
+        跨 Project 事件的统一信封。与 contracts/events/envelope.schema.json 同源，
+        这里是为了让 OpenAPI 单独可用而内联的一份，改的时候两处都要改。
+      required: [eventId, eventType, timestamp]
+      properties:
+        eventId:
+          type: string
+          minLength: 1
+        eventType:
+          type: string
+          pattern: '^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)*\.v[0-9]+$'
+        sessionId:
+          type: string
+        seq:
+          type: integer
+          minimum: 0
+        timestamp:
+          type: integer
+          minimum: 0
+          description: Unix 毫秒。
+        payload:
+          type: object
+          additionalProperties: true

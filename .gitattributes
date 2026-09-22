@@ -1,0 +1,21 @@
+# 统一换行：模板会被 //go:embed 原样写进用户项目，
+# 一旦带 CRLF，生成的 Makefile 在 Linux/macOS/WSL 下 make 会直接报 "missing separator"。
+* text=auto eol=lf
+
+# Windows 专用脚本保留 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# 二进制文件不做换行转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.exe binary

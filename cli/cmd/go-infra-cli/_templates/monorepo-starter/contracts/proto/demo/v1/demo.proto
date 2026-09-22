@@ -1,0 +1,49 @@
+// 跨 Project 的 gRPC 契约示例。
+//
+// 位置规则：contracts/proto/<domain>/<version>/<name>.proto
+// 生成物放 packages/<lang>/，不要提交到手写代码目录（见 tools/codegen/README.md）。
+//
+// 注意：services/gateway 当前的 gRPC 示例为了不引入 codegen 依赖，
+// 用手工 ServiceDesc 注册了 `demo.DemoService/Ping`（见
+// services/gateway/internal/app/demo/grpc/service.go）。本文件表达的是**接入 codegen 后
+// 应当对齐的契约形态**——真实项目请用本文件生成，不要再手写 ServiceDesc。
+syntax = "proto3";
+
+package demo.v1;
+
+option go_package = "github.com/example/monorepo/packages/go/contracts/gen/demo/v1;demov1";
+
+// DemoService 仅用于演示契约的组织方式。
+service DemoService {
+  // Ping 返回一条演示消息。
+  rpc Ping(PingRequest) returns (PingResponse);
+}
+
+message PingRequest {
+  // 可选，留空时服务端使用 "world"。
+  string name = 1;
+}
+
+message PingResponse {
+  // 与 contracts/events/envelope.schema.json 对应的事件信封。
+  EventEnvelope event = 1;
+}
+
+// EventEnvelope 是跨 Project 事件的统一信封。
+//
+// 与 contracts/events/envelope.schema.json 一一对应；
+// 变更只允许向后兼容：加字段可以，改语义、删字段不行。
+message EventEnvelope {
+  // 全局唯一事件 ID。
+  string event_id = 1;
+  // 稳定的事件类型名，形如 <domain>.<entity>.<action>.v<major>。
+  string event_type = 2;
+  // 可选的会话 / 聚合根标识。
+  string session_id = 3;
+  // 同一 session_id 内单调递增。
+  int64 seq = 4;
+  // 事件发生时间，Unix 毫秒。
+  int64 timestamp = 5;
+  // 业务负载（JSON 编码）。
+  string payload_json = 6;
+}

@@ -11,7 +11,11 @@ import (
 const goInfraModulePath = "github.com/liukunxin/go-infra"
 
 func readModulePath(projectDir string) (string, error) {
-	data, err := os.ReadFile(filepath.Join(projectDir, "go.mod"))
+	return readModulePathFromFile(filepath.Join(projectDir, "go.mod"))
+}
+
+func readModulePathFromFile(goModPath string) (string, error) {
+	data, err := os.ReadFile(goModPath)
 	if err != nil {
 		return "", fmt.Errorf("read go.mod: %w", err)
 	}
@@ -21,7 +25,7 @@ func readModulePath(projectDir string) (string, error) {
 			return strings.TrimSpace(strings.TrimPrefix(line, "module ")), nil
 		}
 	}
-	return "", fmt.Errorf("module path not found in go.mod")
+	return "", fmt.Errorf("module path not found in %s", goModPath)
 }
 
 // findLocalGoInfraDir walks upward from start looking for go-infra/go.mod
@@ -50,16 +54,16 @@ func findLocalGoInfraDir(start string) (string, error) {
 	return "", nil
 }
 
-// ensureLocalGoInfraReplace points the module at a nearby local go-infra checkout
-// so generated projects use the latest SDK sources instead of a stale proxy version.
-// No-op when no local go-infra is found (keeps go.mod require as-is for tidy).
+// ensureLocalGoInfraReplace 只在显式 --use-local-sdk 时调用：
+// 把 go-infra 指到旁边的本地 checkout，方便 SDK 未发版时联调。
+// 默认不调用——模板 require 的是发布版，任何机器 clone 下来都能解析依赖。
 func ensureLocalGoInfraReplace(moduleDir string) error {
 	goInfraDir, err := findLocalGoInfraDir(moduleDir)
 	if err != nil {
 		return err
 	}
 	if goInfraDir == "" {
-		fmt.Println("go-infra: local checkout not found; keeping go.mod require (run go get after publishing a new version)")
+		fmt.Println("--use-local-sdk: no local go-infra checkout found nearby, keeping the released dependency")
 		return nil
 	}
 	rel, err := filepath.Rel(moduleDir, goInfraDir)

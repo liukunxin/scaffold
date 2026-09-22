@@ -1,0 +1,63 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  cli:
+    name: go-infra-cli（构建 / 静态检查 / 测试）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: cli/go.mod
+          cache: false
+
+      - name: gofmt
+        run: |
+          dirty="$(gofmt -l .)"
+          if [ -n "$dirty" ]; then
+            echo "以下文件未 gofmt，请在 cli/ 下运行 gofmt -w ."
+            echo "$dirty"
+            exit 1
+          fi
+
+      - name: go build
+        run: go build ./...
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test ./...
+
+  templates:
+    name: 模板契约（换行 / 渲染冒烟）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: cli/go.mod
+          cache: false
+
+      # 模板是产品本身：会被 //go:embed 原样写进用户项目，CRLF 会让生成的 Makefile 直接报错。
+      - name: _templates 不得含 CRLF
+        run: |
+          if grep -rIl $'\r' cli/cmd/go-infra-cli/_templates; then
+            echo "^^ 以上模板文件含 CRLF，请统一为 LF（见仓库根 .gitattributes）"
+            exit 1
+          fi
+          echo "模板换行 OK"
+
+      # 渲染冒烟与本地开发共用同一份脚本（scripts/smoke.sh），避免两处逻辑漂移。
+      - name: 渲染冒烟（--skip-tidy，不联网）
+        run: sh scripts/smoke.sh

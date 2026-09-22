@@ -1,0 +1,64 @@
+# Monorepo 根忽略规则。
+# Project 内部还可以有各自的 .gitignore（例如 apps/<app>/.gitignore）。
+
+# Build artifacts
+bin/
+dist/
+build/
+out/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Node / 前端
+node_modules/
+.next/
+.nuxt/
+.turbo/
+.pnpm-store/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Java
+target/
+*.class
+.gradle/
+
+# 环境文件
+.env
+.env.*
+!.env.example
+
+# 日志
+*.log
+logs/
+
+# 本地生成物
+# tools/codegen 的输出按需在此追加；契约生成物请提交，不要忽略 contracts/ 与 packages/*/ 下的产物。
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

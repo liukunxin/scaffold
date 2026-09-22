@@ -1,0 +1,41 @@
+# 本地联调用的最小 compose：gateway + redis。
+#
+#   docker compose -f deploy/docker/docker-compose.dev.yml up --build
+#
+# Project 自己的 Dockerfile 留在 Project 内部（services/gateway/Dockerfile），
+# 这里只做**跨 Project 的编排**，不放任何 Project 的构建细节。
+
+name: monorepo-dev
+
+services:
+  gateway:
+    build:
+      # context 是仓库根，不是 services/gateway：gateway 的 go.mod 用相对路径
+      # replace 引用了 packages/go/contracts，只拷它自己会在 go mod download 阶段解不开。
+      context: ../..
+      dockerfile: services/gateway/Dockerfile
+    environment:
+      # go-infra 按 env 变量叠加 config.<env>.yml（见 services/gateway/internal/infra/config/loader.go）
+      - env=docker
+    ports:
+      - "8080:8080"   # http
+      - "9091:9091"   # grpc
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # 共享依赖。多个 Project 共用的中间件都放这里，不要让每个 Project 自带一份。
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10

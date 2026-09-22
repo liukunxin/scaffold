@@ -1,0 +1,125 @@
+---
+description: >-
+  go-infra SDK 包地图与关键用法。编写 Go 代码时注入，
+  用于快速定位已有 SDK 入口，避免重复造轮子或扫描 SDK 源码。
+  完整文档见 go-infra 仓库 README.md 与各 pkg/*/README.md。
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# go-infra SDK 参考
+
+> 模块 `github.com/liukunxin/go-infra`。本文件只保留**包地图 + 易错点**，细节以 SDK 仓库文档为准。
+>
+> 同步要求：本文件在脚手架的两份模板（单服务 / Monorepo）里内容必须一致，改一处就要改两处。
+
+## 包地图
+
+### `pkg/base` —— 原子基础能力（项目默认启用）
+
+| 包 | 用途 | 入口 |
+|---|---|---|
+| `pkg/base/log` | 异步结构化日志 | `log.WithContext(ctx).Info/Warn/Errorf(...)`；bootstrap 里 `log.Init(cfg.Log)` + `defer log.Close()` |
+| `pkg/base/errors` | 业务错误封装 | `kerr.WrapError(status, code, err)`；状态常量 `StatusOK/BadRequest/Unauthorized/Forbidden/NotFound/InternalServerError/TooManyRequests` |
+| `pkg/base/config` | YAML + 环境覆盖 + 解密 | `kconfig.Load[T](opts...)` |
+| `pkg/base/trace` | OpenTelemetry 链路追踪 | `trace.Init(opts...)`；业务侧由中间件自动注入 |
+| `pkg/base/env` | 应用名 / 环境名 | `env.SetName()` / `env.SetEnv()` |
+| `pkg/base/uuid` | Snowflake ID | `uuid.GetIDService().GenerateUserID()` → int64 / `GenerateShortID()` |
+| `pkg/base/xutil` | 泛型工具 | `xutil.Map/Filter/Contain/...` |
+
+### `pkg/infra` —— 基础设施客户端
+
+| 包 | 初始化 | 运行时入口 | 说明 |
+|---|---|---|---|
+| `pkg/infra/redis` | `iredis.Init(&cfg.Redis)` | `iredis.GetClient()` → `*redis.Client` | go-redis/v9 |
+| `pkg/infra/mysql` | `mysql.Init(cfg.Mysql)` | `mysql.GetClient()` → `*gorm.DB` | GORM，不用外键 |
+| `pkg/infra/http_client` | `httpclient.Init(cfg.HTTP)` | `httpclient.GetHTTPClient()` / `GetTransport()` | 共享连接池 |
+| `pkg/infra/grpc` | `infragrpc.NewServer/Client(cfg)` | — | 拦截器与治理 |
+| `pkg/infra/websocket` | `websocket.NewHub(cfg)` | `Hub.Run()` | 心跳 / 重连 |
+| `pkg/infra/metrics` | `metrics.InitMetrics(name, router)` | 自动注册 `/metrics` | Prometheus |
+| `pkg/infra/pprof` | `pprof.Start()` | 自动 | pprof HTTP |
+| `pkg/infra/traffic` | `kitraffic.Init(opts...)` | 自动 | 限流 / 熔断 |
+| `pkg/infra/kafka` | `kafka.NewProducer/Consumer(cfg)` | `Publish` / `Subscribe` | Sarama |
+| `pkg/infra/llm` | `llm.New(llm.WithProvider(p))` | `Generate` / `GenerateStream` | 多厂商统一 |
+| `pkg/infra/milvus` | `milvus.Init(cfg)` | `milvus.GetClient()` | 向量库 |
+| `pkg/infra/es` | `es.Init(cfg)` | `es.GetClient()` | Elasticsearch |
+| `pkg/infra/objstore` | `objstore.New(cfg)` | `Put` / `Get` / `Delete` | KS3 / OSS / MinIO |
+| `pkg/infra/apollo` | `apollo.Init(cfg)` | — | 配置中心热更新 |
+
+### `pkg/biz` —— 业务组件
+
+| 包 | 入口 | 说明 |
+|---|---|---|
+| `pkg/biz/controller` | embed `kcontroller.GinBase` | `SuccessResponse` / `ErrorResponse` |
+| `pkg/biz/middlewares` | `bizmw.GinTraceMiddleware()` / `HttpLogRecord()` / `CorsMiddleware()` | Gin 中间件 |
+| `pkg/biz/sse` | SSE 推送封装 | — |
+| `pkg/biz/login` | 多方式登录 + JWT | 密码 / 手机 / 邮箱 / 微信 |
+| `pkg/biz/account` | 账号管理与多登录绑定 | — |
+| `pkg/biz/pay` | 微信 APIv3 / 支付宝 RSA2 | — |
+| `pkg/biz/collab` | 定序 / 幂等 / 回放 / 订阅引擎 | 实时协作 |
+| `pkg/biz/image` | 图片处理服务 | — |
+
+## 初始化顺序（`internal/bootstrap/app.go`）
+
+```text
+log → trace → mysql → redis → pprof → httpclient → traffic → gin → metrics → route.Setup
+```
+
+## 关键用法速查
+
+```go
+// ── 日志 ──
+log.WithContext(ctx).Infof("uid=%d action=%s", uid, action)
+
+// ── 错误 ──
+kerr.WrapError(kerr.StatusNotFound, codes.UserNotFound, fmt.Errorf("user %s", id))
+// Controller 统一响应（kerr 自动映射 HTTP status）：
+c.ErrorResponse(ctx, err)   // {"code":40401,"msg":"..."}
+c.SuccessResponse(ctx, data)// {"code":0,"msg":"ok","data":{...}}
+
+// ── Redis 原子配额（INCR→超限DECR，首次写入设TTL）──
+n, _ := iredis.GetClient().Incr(ctx, key).Result()
+if int(n) > limit { iredis.GetClient().Decr(ctx, key); return errQuota }
+if n == 1 { iredis.GetClient().Expire(ctx, key, ttl) }
+
+// ── 配置加载 ──
+cfg, err := kconfig.Load[App](
+    kconfig.WithEnvFrom("env"),
+    kconfig.WithValidate(true),
+    kconfig.WithTagValidation(true),
+)
+
+// ── HTTP 连接池（RequestOption；出站 metrics 可选）──
+body, status, err := httpclient.GetHTTPClient().Get(ctx, url,
+    httpclient.WithJSON(),
+    httpclient.WithHeader("Authorization", "Bearer "+token),
+    httpclient.WithMetricPath("/users/:id"), // 有纯数字 path 段时建议显式模板
+)
+// SSE/流式（Timeout=0，用 ctx 控超时）：
+cl := &http.Client{Transport: httpclient.GetTransport(), Timeout: 0}
+// Config.MetricsEnabled=true 时上报 http_client_*；InitMetrics(cfg.AppName) 自动带 app_name 标签
+
+// ── LLM 流式 ──
+p, _ := llm.NewOpenAICompatibleProvider("gw", llm.OpenAICompatibleConfig{
+    BaseURL: cfg.BaseURL, APIKey: cfg.APIKey, DefaultModel: "deepseek-v3",
+    Headers: map[string]string{"AI-Gateway-Uid": uid, "AI-Gateway-Product-Name": pn},
+})
+client, _ := llm.New(llm.WithProvider(p))
+ch, _ := client.GenerateStream(ctx, llm.GenerateRequest{Messages: msgs})
+// ⚠️ GenerateStream 仅输出文本 delta，不含 tool_calls 解析。
+//    需 tool_calls 时需自行用 bufio.Scanner 读 SSE（buffer ≥ 512KB，行末补 "\n\n"）
+
+// ── 配置加密（生产环境） ──
+// go-infra-cli keygen / encrypt / decrypt
+// cfg.Redis.Password = "ENC(base64...)"
+// kconfig.Load[App](kconfig.WithDecrypt(kconfig.AESKeyFromEnv("CONFIG_ENCRYPT_KEY")))
+```
+
+## 禁止事项
+
+- 不得在业务代码中 `&http.Client{}`（绕过连接池）
+- 不得 `fmt.Println` / 自建 zap（绕过统一日志）
+- 不得手写 JSON 错误体（用 `ErrorResponse`）
+- MySQL 禁止 `FOREIGN KEY` 约束
+
+> 跨 Project 的依赖边界（不得 import 对方 `internal/`）见 `00-architecture.mdc`。

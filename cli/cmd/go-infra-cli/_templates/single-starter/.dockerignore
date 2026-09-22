@@ -1,0 +1,18 @@
+# 构建只需要源码与配置，别把本地产物和 VCS 元数据塞进上下文。
+.git
+.gitignore
+.dockerignore
+Dockerfile
+bin/
+dist/
+*.exe
+*.test
+coverage.out
+*.log
+.env
+.env.*
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+README.md

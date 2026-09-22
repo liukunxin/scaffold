@@ -1,0 +1,27 @@
+# 构建上下文是整个仓库（见 services/*/Dockerfile 的注释），
+# 这里只放行构建真正需要的东西，避免 .git / node_modules 把上下文撑大。
+.git
+.github
+.gitattributes
+.gitignore
+.dockerignore
+*.md
+**/*.md
+
+bin/
+**/bin/
+dist/
+**/dist/
+node_modules/
+**/node_modules/
+**/.venv/
+**/__pycache__/
+**/*.test
+**/coverage.out
+*.log
+.env
+.env.*
+
+docs/
+deploy/
+tools/

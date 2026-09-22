@@ -1,0 +1,90 @@
+---
+description: Enforce monorepo layering, Project boundaries and dependency direction
+alwaysApply: true
+---
+
+# Monorepo Architecture Rule
+
+## 两层概念，不要混
+
+- **Monorepo 是 Repository 层级的概念**：一个 Git 仓库里放多个相对独立的 **Project**。
+  它不规定语言，不规定构建系统，也不要求把多个 Project 耦合成一个。
+- **Project 是项目边界**：`go.mod` / `package.json` / `pyproject.toml` 属于 Project 内部。
+
+推论：**不要把这个仓库当成"一个大 Go 项目"。** 根目录不允许出现 `controller/`、`service/`、`dao/`、`model/` 这类横向分层目录——那会抹掉 Project 边界。
+
+## 目录职责
+
+| 目录 | 放什么 |
+|---|---|
+| `apps/*` | 面向用户/客户端的应用 Project |
+| `services/*` | 后端服务 Project |
+| `packages/<lang>/*` | 跨 Project 复用的公共代码（分语言） |
+| `contracts/*` | 跨 Project 的通信契约，**语言中立** |
+| `tools/*` | 仓库级开发工具（codegen / lint / release） |
+| `deploy/*` | 跨 Project 共用的部署体系 |
+| `docs/*` | 跨 Project 的文档 |
+
+Project 专属的东西（`Dockerfile`、配置、迁移脚本、模块清单）留在 Project 内部。
+
+## 依赖方向（最重要）
+
+```text
+允许：
+  Project → packages/            复用跨 Project 公共代码
+  Project → contracts/           共享契约
+  Project A ↔ contracts ↔ Project B
+
+禁止：
+  Project A → Project B/internal/xxx
+  任何形式的「跨 Project import 对方内部实现」
+```
+
+- 跨 Project 只通过 **HTTP / gRPC / Message-Event / Contract** 通信。
+- `contracts/` 放**定义**，`packages/<lang>/` 放**该语言的绑定**。不要混。
+- 同仓 Go 模块之间用相对路径 `replace` 引用（见 `services/gateway/go.mod`），
+  保证没有 `go.work` 时（CI 单模块构建、`go mod tidy`）也能离线解析。
+
+## Project 内部（Go Project = single-starter 规范）
+
+**仓库层用 Monorepo 规范，Project 层用 single-starter 规范。** 不要重新发明另一套 Service 架构。
+
+```text
+cmd/             # 按「运行形态」划分：http / grpc / worker
+internal/app/    # 按「业务域」垂直切片：app/<domain>/{controller,service,logic,dao,dto,vo,...}
+internal/bootstrap/   # 启动编排与依赖装配
+internal/infra/       # 技术适配（配置、外部依赖的端口与实现）
+internal/route/       # HTTP / gRPC / WS 协议层
+configs/              # 配置 + 环境覆盖
+```
+
+- 依赖方向：`cmd -> bootstrap -> app -> infra/sdk`。
+- `cmd/*` 只做入口装配与生命周期。SDK 日志初始化**之前**允许用标准库 `log.Fatalf`——这是"禁止平行日志栈"的唯一例外。
+- `internal/app` 承载业务决策；不要在这里混传输或存储细节。
+- `internal/infra` 只实现适配器与外部集成。
+- `internal/route` 只做传输层粘合，不写业务分支。
+- `logic` **仅用于跨 service / 跨域的编排**；单 service 直通用 `controller -> service`。
+- 优先构造函数注入，不要全局状态。
+
+## packages 的准入门槛
+
+> 只有**同一份代码确实被 2 个以上 Project 复用、且边界稳定**时才提升到 `packages/`。
+> 默认：Project 内部代码留在 Project 内部。
+
+禁止 `packages/common/`、`packages/utils/`、`packages/business/` 这类没有边界的大杂烩；
+禁止把某个 Project 的业务代码搬进 `packages/`（除非它确实是多 Project 共享的独立领域能力）。
+
+## go.work
+
+`go.work` 只管**开发环境**的 Go 模块联调，**不是** Monorepo 的定义：
+
+- 删掉它，仓库依然是 Monorepo。
+- 只列 Go 模块，不列前端 / Python Project。
+- 它的 workspace 根目录不是模块，所以根目录不能直接 `go build ./...`（用 `make` 的目标）。
+
+## 变更安全
+
+1. 新文件放进最贴近的既有层/包，沿用现有命名。
+2. 接口靠近调用方，实现放 infra。
+3. 行为、配置、契约变更时，同一次改动里更新受影响的文档。
+4. 非明确要求的破坏性变更不要做。
