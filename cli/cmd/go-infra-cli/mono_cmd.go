@@ -258,8 +258,10 @@ func readMonorepoModuleRoot(root string) (string, error) {
 		}
 	}
 	return "", errors.New(
-		"cannot infer the monorepo Go module root: no Go module found under apps/*, services/* or packages/go/*; " +
-			"create one first (e.g. go-infra-cli mono add service <name>)",
+		"cannot infer the monorepo Go module root: no usable Go module under apps/*, services/* or packages/go/* " +
+			"(module path must end with /<category>/<name>); " +
+			"restore a generated module (e.g. services/gateway) or re-run `go-infra-cli init --layout monorepo` — " +
+			"`mono add` cannot bootstrap the module root by itself",
 	)
 }
 
