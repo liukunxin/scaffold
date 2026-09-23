@@ -149,11 +149,6 @@ replace <module-root>/packages/go/contracts => ../../packages/go/contracts
 
 这样在**没有** `go.work` 的场景（CI 单模块构建、`go mod tidy`）也能离线解析，不必去公网拉一个不存在的伪版本。
 
-`go.work` 里还有一行 `replace google.golang.org/genproto => ...`，那是历史包袱的兜底：
-`go-infra v1.0.2` 还间接依赖拆分前的单体 `genproto`，它和 grpc 要的拆分模块同时进入 workspace 构建列表会
-报 `ambiguous import`（单模块工程会被 `go mod tidy` 剪掉，workspace 不会剪）。`go.work` 的改动不会被
-`go mod tidy` 覆盖，所以放这里最稳。go-infra 摘掉该依赖后这行即可删除。
-
 ## 快速开始
 
 ```bash

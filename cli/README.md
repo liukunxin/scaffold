@@ -20,7 +20,7 @@ cd scaffold/cli
 go install ./cmd/go-infra-cli
 ```
 
-生成的项目默认 `require github.com/liukunxin/go-infra v1.0.2`（发布版），不写 `replace`，
+生成的项目默认 `require github.com/liukunxin/go-infra v1.0.3`（发布版），不写 `replace`，
 换台机器也能直接 `go mod tidy`。若确实要指向本机 checkout 的 SDK，显式加 `--use-local-sdk`。
 
 ## 通用参数（init）

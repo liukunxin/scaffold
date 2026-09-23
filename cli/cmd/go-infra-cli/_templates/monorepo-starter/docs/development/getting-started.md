@@ -141,11 +141,6 @@ make check
 **根目录 `go build ./...` 报错**
 正常。workspace 根不是模块，见第 2 节。
 
-**`ambiguous import: google.golang.org/genproto/...`**
-`go.work` 里有一行 `replace google.golang.org/genproto => ...`，是给 `go-infra v1.0.2` 的间接依赖兜底
-（它引了拆分前的单体 genproto，与 grpc 要的 `genproto/googleapis/rpc` 冲突，单模块工程会被 `go mod tidy`
-剪掉、workspace 不会）。不要删这行。go-infra 摘掉该依赖后即可移除。详见根 `README.md` 第 7 节。
-
 **`make: command not found`**
 Windows 上装 GNU make（或用 WSL / Git Bash）。上面的每个目标都有等价的手工命令。
 
